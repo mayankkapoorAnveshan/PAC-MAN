@@ -76,6 +76,70 @@ canvas{
   text-shadow:0 0 4px rgba(242,203,5,0.5);
 }
 #pauseBtn:active{background:rgba(78,205,196,0.5);transform:scale(0.92)}
+
+/* ============================================================
+   FIRST-TIME SWIPE HINT OVERLAY
+   Shows arrows + text to teach new players the swipe controls.
+   Fades out automatically after ~4 seconds or on first interaction.
+   ============================================================ */
+#swipeHint{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+  z-index:90;
+  background:rgba(0,0,0,0.55);
+  animation:hintFadeIn 0.4s ease-out;
+}
+#swipeHint.show{display:flex}
+#swipeHint.hide{animation:hintFadeOut 0.5s ease-out forwards}
+@keyframes hintFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes hintFadeOut{from{opacity:1}to{opacity:0}}
+#swipeHint .box{
+  text-align:center;
+  color:#f2cb05;
+  font-family:monospace;
+  text-shadow:0 0 10px rgba(242,203,5,0.6);
+  padding:20px;
+}
+#swipeHint .arrows{
+  position:relative;
+  width:140px;
+  height:140px;
+  margin:0 auto 16px;
+}
+#swipeHint .arrow{
+  position:absolute;
+  font-size:36px;
+  color:#4ecdc4;
+  text-shadow:0 0 12px rgba(78,205,196,0.8);
+  animation:arrowPulse 1.2s ease-in-out infinite;
+}
+#swipeHint .arrow.up{top:0;left:50%;transform:translateX(-50%)}
+#swipeHint .arrow.down{bottom:0;left:50%;transform:translateX(-50%);animation-delay:0.3s}
+#swipeHint .arrow.left{left:0;top:50%;transform:translateY(-50%);animation-delay:0.6s}
+#swipeHint .arrow.right{right:0;top:50%;transform:translateY(-50%);animation-delay:0.9s}
+#swipeHint .finger{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-size:40px;
+  animation:fingerSwipe 2s ease-in-out infinite;
+}
+@keyframes arrowPulse{0%,100%{opacity:0.4;transform:translateX(-50%) scale(1)}50%{opacity:1;transform:translateX(-50%) scale(1.15)}}
+#swipeHint .arrow.left,#swipeHint .arrow.right{animation-name:arrowPulseV}
+@keyframes arrowPulseV{0%,100%{opacity:0.4;transform:translateY(-50%) scale(1)}50%{opacity:1;transform:translateY(-50%) scale(1.15)}}
+@keyframes fingerSwipe{
+  0%,100%{transform:translate(-50%,-50%)}
+  25%{transform:translate(20%,-50%)}
+  50%{transform:translate(-50%,-50%)}
+  75%{transform:translate(-50%,-20%)}
+}
+#swipeHint .title{font-size:18px;font-weight:bold;letter-spacing:2px;margin-bottom:8px}
+#swipeHint .sub{font-size:11px;color:#fffbe8;letter-spacing:1px;line-height:1.6}
+#swipeHint .sub b{color:#f2cb05}
 #dpad{display:none;position:relative;width:clamp(140px,38vw,170px);height:clamp(140px,38vw,170px);margin:6px auto 0;flex-shrink:0}
 .db{position:absolute;width:clamp(48px,13vw,56px);height:clamp(48px,13vw,56px);background:rgba(0,88,75,0.75);border:2px solid #4ecdc4;border-radius:14px;color:#f2cb05;font-size:clamp(22px,6vw,26px);display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation}
 .db:active{background:rgba(78,205,196,0.5);transform:scale(0.9)}
@@ -130,6 +194,23 @@ canvas{
 <div id="dpad">
   <div class="db" id="bu">&#9650;</div><div class="db" id="bd">&#9660;</div>
   <div class="db" id="bl">&#9664;</div><div class="db" id="br">&#9654;</div>
+</div>
+<!-- First-time swipe hint overlay (fades out after few seconds / first swipe) -->
+<div id="swipeHint">
+  <div class="box">
+    <div class="arrows">
+      <div class="arrow up">&#9650;</div>
+      <div class="arrow down">&#9660;</div>
+      <div class="arrow left">&#9664;</div>
+      <div class="arrow right">&#9654;</div>
+      <div class="finger">&#128070;</div>
+    </div>
+    <div class="title">SWIPE TO MOVE</div>
+    <div class="sub">
+      Swipe <b>anywhere</b> to change direction<br>
+      Double-tap to <b>pause</b>
+    </div>
+  </div>
 </div>
 <div id="ft">ANVESHAN 2026</div>
 <script type="module" src="/src/main.ts"></script>

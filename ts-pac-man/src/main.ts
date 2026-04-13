@@ -80,5 +80,38 @@ startBtn.addEventListener('touchstart', (e) => {
 
 setupInput(state, cv, pauseBtn, onStart, onRestart);
 
+// ============================================================
+// FIRST-TIME SWIPE HINT — teach new mobile players the controls
+// ============================================================
+// Only shows on touch devices, and only once per browser (stored
+// in localStorage). Fades out after 4 seconds OR when the player
+// performs any touch — whichever comes first.
+// ============================================================
+const swipeHint = document.getElementById('swipeHint');
+const HINT_SEEN_KEY = 'anveshan_swipe_hint_seen';
+const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+if (swipeHint && isTouchDevice && !localStorage.getItem(HINT_SEEN_KEY)) {
+  // Show the hint overlay (CSS keyframes handle fade-in)
+  swipeHint.classList.add('show');
+
+  // Dismiss handler — fade out, then fully hide and mark as seen
+  const dismissHint = (): void => {
+    if (!swipeHint.classList.contains('show')) return;
+    swipeHint.classList.add('hide');
+    // Wait for fade-out animation, then remove classes
+    setTimeout(() => {
+      swipeHint.classList.remove('show', 'hide');
+    }, 500);
+    localStorage.setItem(HINT_SEEN_KEY, '1');
+  };
+
+  // Auto-dismiss after 4 seconds
+  setTimeout(dismissHint, 4000);
+
+  // Also dismiss on first touch anywhere — player already knows now
+  window.addEventListener('touchstart', dismissHint, { once: true, passive: true });
+}
+
 drawLives(state, livE);
 gameLoop(cx, state, scE, hiE, lvE, livE);

@@ -36,48 +36,150 @@ export function setupInput(
     if (state.paused) state.paused = false;
   });
 
-  // --- Touch swipe controls (mobile/tablet) ---
-  // Continuous swipe: direction changes the moment finger crosses threshold,
-  // then resets origin so player can change direction without lifting finger.
-  let ttx = 0, tty = 0;
-  const SWIPE_THRESHOLD = 20;  // px — how far to swipe before direction registers
+  // ============================================================
+  // TOUCH SWIPE CONTROLS — window-wide, continuous, with haptics
+  // ============================================================
+  // Features:
+  //  1. Swipe anywhere on the page (not just canvas) — more forgiving
+  //  2. Continuous direction changes — no need to lift finger
+  //  3. Haptic vibration on every direction change — tactile feedback
+  //  4. Double-tap anywhere to pause/resume — quick shortcut
+  //  5. Buttons (start/pause) are excluded so taps on them still work
+  // ============================================================
 
-  function applySwipeDirection(ddx: number, ddy: number): void {
-    if (Math.abs(ddx) > Math.abs(ddy)) {
-      state.ndx = ddx > 0 ? 1 : -1;
-      state.ndy = 0;
-    } else {
-      state.ndx = 0;
-      state.ndy = ddy > 0 ? 1 : -1;
+  // Touch origin (finger down position) — swipes are measured from here
+  let ttx = 0, tty = 0;
+  // When the touch started — used to distinguish tap (quick) vs swipe (long)
+  let touchStartTime = 0;
+  // Timestamp of last tap — used to detect double-tap (second tap within window)
+  let lastTapTime = 0;
+  // Last applied direction — used to avoid re-vibrating on same direction
+  let lastDx = 0, lastDy = 0;
+
+  // Tunable constants
+  const SWIPE_THRESHOLD = 18;  // px finger must move before swipe registers (balance: sensitive vs accidental)
+  const DOUBLE_TAP_MS = 300;   // max time between two taps to count as double-tap
+  const TAP_MAX_DIST = 10;     // if finger moves less than this during touch, it's a tap (not swipe)
+  const TAP_MAX_TIME = 250;    // touch shorter than this = tap (longer = swipe/hold)
+
+  // Fire a short vibration if the device supports it (phones do, desktops don't)
+  // Wrapped in try/catch because some browsers throw if vibration policy blocks it
+  function vibrate(ms: number): void {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try { navigator.vibrate(ms); } catch { /* ignore: vibration not permitted */ }
     }
+  }
+
+  // Apply a swipe vector to the game's next-direction (ndx, ndy)
+  // The game loop will turn the cow when she's tile-aligned (buffered input)
+  function applySwipeDirection(ddx: number, ddy: number): void {
+    let nx = 0, ny = 0;
+    // Dominant axis wins — avoids diagonal ambiguity
+    if (Math.abs(ddx) > Math.abs(ddy)) {
+      nx = ddx > 0 ? 1 : -1;  // right or left
+    } else {
+      ny = ddy > 0 ? 1 : -1;  // down or up
+    }
+    // Only vibrate when the new direction actually differs from the previous one.
+    // Otherwise every touchmove frame would trigger vibration = annoying buzz.
+    if (nx !== lastDx || ny !== lastDy) {
+      vibrate(12);
+      lastDx = nx;
+      lastDy = ny;
+    }
+    state.ndx = nx;
+    state.ndy = ny;
+    // Any swipe also unpauses — prevents the player being stuck in paused state
     if (state.paused) state.paused = false;
   }
 
-  canvas.addEventListener('touchstart', (e: TouchEvent) => {
-    e.preventDefault();
+  // Check if a touch event target is part of the game area (canvas/body)
+  // and NOT a button like Pause/Start — we don't want swipes to consume button taps
+  function isGameTarget(target: EventTarget | null): boolean {
+    if (!target) return true;
+    const el = target as HTMLElement;
+    // Reject direct button clicks so their own handlers still fire
+    if (el.tagName === 'BUTTON') return false;
+    // Also reject anything nested inside a button (button icons, text spans)
+    if (el.closest && el.closest('button')) return false;
+    return true;
+  }
+
+  // --- touchstart: record origin + auto-start/restart the game if needed ---
+  window.addEventListener('touchstart', (e: TouchEvent) => {
+    if (!isGameTarget(e.target)) return;   // let buttons handle their own taps
+    e.preventDefault();                     // stop scrolling, text selection, etc.
+
+    // If game over → any touch triggers restart
     if (state.gameover && state.goT <= 0) { doRestart(); return; }
+    // If game not started → first touch starts the game
     if (!state.started) { doStart(); return; }
+
+    // Record where the finger came down + when
     ttx = e.touches[0].clientX;
     tty = e.touches[0].clientY;
+    touchStartTime = Date.now();
   }, { passive: false });
 
-  canvas.addEventListener('touchmove', (e: TouchEvent) => {
+  // --- touchmove: live swipe detection ---
+  // Player ke finger slide karte hi direction change ho jaati hai,
+  // finger uthane ki zarurat nahi. After each registered swipe we
+  // reset the origin so the NEXT swipe in a different direction is
+  // measured fresh from the current finger position.
+  window.addEventListener('touchmove', (e: TouchEvent) => {
+    if (!isGameTarget(e.target)) return;
     e.preventDefault();
     if (!state.started) return;
+
     const ddx = e.touches[0].clientX - ttx;
     const ddy = e.touches[0].clientY - tty;
+
+    // Haven't moved far enough yet — keep waiting
     if (Math.abs(ddx) < SWIPE_THRESHOLD && Math.abs(ddy) < SWIPE_THRESHOLD) return;
+
+    // Register the swipe and update game direction
     applySwipeDirection(ddx, ddy);
-    // Reset origin so next swipe in another direction registers immediately
+
+    // Reset origin to current position — next swipe is measured from here.
+    // This is what enables "swipe right then up without lifting finger"
     ttx = e.touches[0].clientX;
     tty = e.touches[0].clientY;
   }, { passive: false });
 
-  canvas.addEventListener('touchend', (e: TouchEvent) => {
-    e.preventDefault();
+  // --- touchend: handle taps (double-tap pause) + final swipe catch ---
+  window.addEventListener('touchend', (e: TouchEvent) => {
+    if (!isGameTarget(e.target)) return;
     if (!state.started) return;
-    const ddx = e.changedTouches[0].clientX - ttx;
-    const ddy = e.changedTouches[0].clientY - tty;
+
+    const t = e.changedTouches[0];
+    const ddx = t.clientX - ttx;
+    const ddy = t.clientY - tty;
+    const dist = Math.hypot(ddx, ddy);
+    const duration = Date.now() - touchStartTime;
+
+    // --- Tap detection (quick touch with almost no movement) ---
+    // Ye double-tap shortcut ke liye hai — 300ms ke andar do taps = pause/resume
+    if (dist < TAP_MAX_DIST && duration < TAP_MAX_TIME) {
+      const now = Date.now();
+      if (now - lastTapTime < DOUBLE_TAP_MS) {
+        // Double-tap confirmed — toggle pause (only during active gameplay)
+        if (!state.dead && !state.won && !state.gameover) {
+          state.paused = !state.paused;
+          pauseBtn.textContent = state.paused ? 'RESUME' : 'PAUSE';
+          vibrate(18);  // stronger buzz so player knows the toggle worked
+        }
+        lastTapTime = 0;  // reset — prevents triple-tap from re-pausing
+      } else {
+        // First tap — remember timestamp, wait for a possible second tap
+        lastTapTime = now;
+      }
+      return;
+    }
+
+    // --- Final swipe catch ---
+    // Agar player ne finger slowly slide kiya aur threshold cross nahi hua
+    // touchmove mein, but end position threshold cross kar rahi hai,
+    // toh yahaan bhi direction apply kar do (edge case handling)
     if (Math.abs(ddx) < SWIPE_THRESHOLD && Math.abs(ddy) < SWIPE_THRESHOLD) return;
     applySwipeDirection(ddx, ddy);
   }, { passive: false });
