@@ -2,6 +2,7 @@ import { W, H } from './constants';
 import { createInitialState, doStart, doRestart, drawLives, gameLoop } from './game';
 import { setupInput } from './input';
 import { initRenderer } from './renderer';
+import { getLeaderboard } from './leaderboard';
 
 initRenderer();
 
@@ -74,11 +75,45 @@ function onRestart(): void {
   startBtn.classList.add('hidden');
 }
 
-// Show start button again on game over (for mobile)
+// ============================================================
+// TOP LEADERBOARD PANEL
+// Populates the mobile top panel with the top-5 scores from
+// localStorage. Re-renders whenever a new game ends.
+// ============================================================
+const tbList = document.getElementById('tbList') as HTMLElement | null;
+const topBoard = document.getElementById('topBoard') as HTMLElement | null;
+
+function renderLeaderboardPanel(): void {
+  if (!tbList || !topBoard) return;
+  const board = getLeaderboard();
+  if (board.length === 0) {
+    // Empty state — prompt user to play
+    topBoard.classList.add('empty');
+    tbList.innerHTML = '<div class="tbEntry">Play to set your first score!</div>';
+    return;
+  }
+  topBoard.classList.remove('empty');
+  // Render each entry as a small chip: #1 1250 (L3)
+  tbList.innerHTML = board.map((entry, i) => {
+    const rankClass = i === 0 ? 'tbEntry rank1' : 'tbEntry';
+    return `<div class="${rankClass}"><span class="rank">#${i + 1}</span>${entry.score} <span style="opacity:0.7">L${entry.level}</span></div>`;
+  }).join('');
+}
+renderLeaderboardPanel();
+
+// Show start button again on game over (for mobile) + refresh leaderboard
+let prevGameOver = false;
 function watchGameOver(): void {
   if (state.gameover && state.goT <= 0) {
     startBtn.textContent = 'TAP TO RETRY';
     startBtn.classList.remove('hidden');
+    // Refresh leaderboard once when we enter post-gameover state
+    if (!prevGameOver) {
+      renderLeaderboardPanel();
+      prevGameOver = true;
+    }
+  } else if (!state.gameover) {
+    prevGameOver = false;
   }
   requestAnimationFrame(watchGameOver);
 }
