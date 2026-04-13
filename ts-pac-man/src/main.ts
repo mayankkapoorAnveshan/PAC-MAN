@@ -133,37 +133,57 @@ startBtn.addEventListener('touchstart', (e) => {
 setupInput(state, cv, pauseBtn, onStart, onRestart);
 
 // ============================================================
-// FIRST-TIME SWIPE HINT — teach new mobile players the controls
+// TUTORIAL OVERLAY — "How to Play" guide
 // ============================================================
-// Only shows on touch devices, and only once per browser (stored
-// in localStorage). Fades out after 4 seconds OR when the player
-// performs any touch — whichever comes first.
+// - Auto-shows on first visit (tracked via localStorage)
+// - Reopens whenever the player taps the "?" help button
+// - Closes via (X) close button OR "LET'S PLAY!" CTA button
+// - Pauses the game while open so player can read without pressure
 // ============================================================
-const swipeHint = document.getElementById('swipeHint');
-const HINT_SEEN_KEY = 'anveshan_swipe_hint_seen';
-const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+const tutorial = document.getElementById('tutorial') as HTMLElement | null;
+const helpBtn = document.getElementById('helpBtn') as HTMLButtonElement | null;
+const tutClose = tutorial?.querySelector('.tutClose') as HTMLButtonElement | null;
+const tutCta = tutorial?.querySelector('.tutCta') as HTMLButtonElement | null;
+const TUTORIAL_SEEN_KEY = 'anveshan_tutorial_seen';
 
-if (swipeHint && isTouchDevice && !localStorage.getItem(HINT_SEEN_KEY)) {
-  // Show the hint overlay (CSS keyframes handle fade-in)
-  swipeHint.classList.add('show');
-
-  // Dismiss handler — fade out, then fully hide and mark as seen
-  const dismissHint = (): void => {
-    if (!swipeHint.classList.contains('show')) return;
-    swipeHint.classList.add('hide');
-    // Wait for fade-out animation, then remove classes
-    setTimeout(() => {
-      swipeHint.classList.remove('show', 'hide');
-    }, 500);
-    localStorage.setItem(HINT_SEEN_KEY, '1');
-  };
-
-  // Auto-dismiss after 4 seconds
-  setTimeout(dismissHint, 4000);
-
-  // Also dismiss on first touch anywhere — player already knows now
-  window.addEventListener('touchstart', dismissHint, { once: true, passive: true });
+// Open the tutorial overlay (pause game if running)
+function showTutorial(): void {
+  if (!tutorial) return;
+  tutorial.classList.remove('hide');
+  tutorial.classList.add('show');
+  // Scroll to top in case user previously scrolled down
+  tutorial.scrollTop = 0;
+  // Auto-pause active gameplay so the guide isn't competing with the game
+  if (state.started && !state.dead && !state.won && !state.gameover && !state.paused) {
+    state.paused = true;
+    pauseBtn.textContent = 'RESUME';
+  }
 }
+
+// Close the tutorial overlay and mark as seen
+function hideTutorial(): void {
+  if (!tutorial) return;
+  tutorial.classList.add('hide');
+  // Wait for fade-out animation to finish before removing display
+  setTimeout(() => {
+    tutorial.classList.remove('show', 'hide');
+  }, 320);
+  localStorage.setItem(TUTORIAL_SEEN_KEY, '1');
+}
+
+// Auto-show on very first visit to this browser
+if (tutorial && !localStorage.getItem(TUTORIAL_SEEN_KEY)) {
+  showTutorial();
+}
+
+// Wire all the buttons
+helpBtn?.addEventListener('click', showTutorial);
+tutClose?.addEventListener('click', hideTutorial);
+tutCta?.addEventListener('click', hideTutorial);
+// Touchstart variants for snappy mobile response (prevents 300ms click delay)
+helpBtn?.addEventListener('touchstart', (e) => { e.preventDefault(); showTutorial(); }, { passive: false });
+tutClose?.addEventListener('touchstart', (e) => { e.preventDefault(); hideTutorial(); }, { passive: false });
+tutCta?.addEventListener('touchstart', (e) => { e.preventDefault(); hideTutorial(); }, { passive: false });
 
 drawLives(state, livE);
 gameLoop(cx, state, scE, hiE, lvE, livE);

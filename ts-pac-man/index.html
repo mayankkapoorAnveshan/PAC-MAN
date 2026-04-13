@@ -78,6 +78,148 @@ canvas{
 #pauseBtn:active{background:rgba(78,205,196,0.5);transform:scale(0.92)}
 
 /* ============================================================
+   HELP BUTTON — top-left floating "?" button
+   Tap anytime to reopen the tutorial overlay.
+   ============================================================ */
+#helpBtn{
+  position:fixed;
+  top:max(env(safe-area-inset-top),8px);
+  left:max(env(safe-area-inset-left),10px);
+  z-index:100;
+  width:40px;
+  height:40px;
+  background:rgba(0,88,75,0.85);
+  border:2px solid #4ecdc4;
+  border-radius:50%;
+  color:#f2cb05;
+  font-size:20px;
+  font-family:monospace;
+  font-weight:bold;
+  cursor:pointer;
+  touch-action:manipulation;
+  box-shadow:0 2px 8px rgba(0,0,0,0.4),0 0 12px rgba(78,205,196,0.3);
+  text-shadow:0 0 6px rgba(242,203,5,0.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+}
+#helpBtn:active{background:rgba(78,205,196,0.5);transform:scale(0.92)}
+
+/* ============================================================
+   TUTORIAL OVERLAY — "HOW TO PLAY" guide
+   Auto-shows on first visit, reopens on help button tap.
+   Full-screen scrollable overlay with all game info.
+   ============================================================ */
+#tutorial{
+  position:fixed;
+  inset:0;
+  display:none;
+  z-index:200;
+  background:rgba(1,31,26,0.96);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  animation:tutFadeIn 0.35s ease-out;
+}
+#tutorial.show{display:block}
+#tutorial.hide{animation:tutFadeOut 0.3s ease-out forwards}
+@keyframes tutFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes tutFadeOut{from{opacity:1}to{opacity:0}}
+#tutorial .tutWrap{
+  max-width:520px;
+  margin:0 auto;
+  padding:20px 18px 30px;
+  font-family:monospace;
+  color:#fffbe8;
+}
+#tutorial .tutHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:1px solid rgba(78,205,196,0.3);
+  padding-bottom:10px;
+  margin-bottom:14px;
+}
+#tutorial .tutTitle{
+  font-size:18px;
+  color:#f2cb05;
+  font-weight:bold;
+  letter-spacing:2px;
+  text-shadow:0 0 10px rgba(242,203,5,0.6);
+}
+#tutorial .tutClose{
+  background:rgba(231,76,60,0.2);
+  border:2px solid #e74c3c;
+  color:#e74c3c;
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  font-size:18px;
+  font-weight:bold;
+  cursor:pointer;
+  touch-action:manipulation;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+}
+#tutorial .tutClose:active{background:rgba(231,76,60,0.5);transform:scale(0.92)}
+#tutorial .tutSection{margin-bottom:16px}
+#tutorial .tutHead{
+  color:#4ecdc4;
+  font-size:12px;
+  font-weight:bold;
+  letter-spacing:1.5px;
+  margin-bottom:6px;
+  text-shadow:0 0 6px rgba(78,205,196,0.5);
+}
+#tutorial .tutText{
+  font-size:11px;
+  line-height:1.6;
+  color:#fffbe8;
+  opacity:0.92;
+}
+#tutorial .tutText b{color:#f2cb05}
+#tutorial .tutGrid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+  gap:8px;
+  margin-top:6px;
+}
+#tutorial .tutItem{
+  background:rgba(0,88,75,0.35);
+  border:1px solid rgba(78,205,196,0.25);
+  border-radius:6px;
+  padding:8px 10px;
+  font-size:10px;
+}
+#tutorial .tutItem .ico{font-size:18px;margin-right:6px;vertical-align:middle}
+#tutorial .tutItem .name{color:#f2cb05;font-weight:bold;display:block;margin-bottom:2px}
+#tutorial .tutItem .desc{color:#fffbe8;opacity:0.75;font-size:9px}
+#tutorial .tutItem.enemy{border-color:rgba(231,76,60,0.3)}
+#tutorial .tutItem.enemy .name{color:#ff8a80}
+#tutorial .tutCta{
+  display:block;
+  width:100%;
+  margin-top:20px;
+  padding:14px;
+  background:linear-gradient(to bottom,rgba(242,203,5,0.25),rgba(242,203,5,0.1));
+  border:2px solid #f2cb05;
+  border-radius:12px;
+  color:#f2cb05;
+  font-size:14px;
+  font-family:monospace;
+  font-weight:bold;
+  letter-spacing:2px;
+  cursor:pointer;
+  touch-action:manipulation;
+  text-shadow:0 0 8px rgba(242,203,5,0.5);
+  box-shadow:0 0 16px rgba(242,203,5,0.2);
+}
+#tutorial .tutCta:active{background:rgba(242,203,5,0.45);transform:scale(0.98)}
+
+/* ============================================================
    TOP LEADERBOARD PANEL
    Fills vacant upper-screen space on mobile with a decorative
    top-5 scoreboard. Updates whenever a new game ends.
@@ -244,6 +386,7 @@ canvas{
   <div class="tbTitle">&#9733; TOP SCORES &#9733;</div>
   <div class="tbList" id="tbList"></div>
 </div>
+<button id="helpBtn" aria-label="How to play">?</button>
 <button id="pauseBtn">PAUSE</button>
 <canvas id="cv"></canvas>
 <button id="startBtn">TAP TO START</button>
@@ -254,6 +397,122 @@ canvas{
   <div class="db" id="bu">&#9650;</div><div class="db" id="bd">&#9660;</div>
   <div class="db" id="bl">&#9664;</div><div class="db" id="br">&#9654;</div>
 </div>
+<!-- ============================================================
+     TUTORIAL OVERLAY — "How to Play" guide
+     Auto-shows on first visit, reopens via help (?) button
+     ============================================================ -->
+<div id="tutorial">
+  <div class="tutWrap">
+    <div class="tutHeader">
+      <div class="tutTitle">HOW TO PLAY</div>
+      <button class="tutClose" aria-label="Close tutorial">&#10005;</button>
+    </div>
+
+    <!-- 1. Objective / story -->
+    <div class="tutSection">
+      <div class="tutHead">&#127919; OBJECTIVE</div>
+      <div class="tutText">
+        You are a <b>desi cow</b> on a journey of purity!
+        Collect <b>honey drops</b>, eat <b>A2 ghee</b> for power,
+        and chase away the adulterated junk food polluting the maze.
+      </div>
+    </div>
+
+    <!-- 2. Controls -->
+    <div class="tutSection">
+      <div class="tutHead">&#128070; CONTROLS</div>
+      <div class="tutText">
+        &bull; <b>Swipe</b> anywhere &mdash; change direction<br>
+        &bull; <b>Double-tap</b> &mdash; pause / resume<br>
+        &bull; <b>Arrow keys / WASD</b> &mdash; desktop play<br>
+        &bull; <b>? button</b> &mdash; reopen this guide anytime
+      </div>
+    </div>
+
+    <!-- 3. Collect -->
+    <div class="tutSection">
+      <div class="tutHead">&#11088; COLLECT</div>
+      <div class="tutGrid">
+        <div class="tutItem">
+          <span class="ico">&#127855;</span>
+          <span class="name">Honey Drop</span>
+          <div class="desc">+10 points each</div>
+        </div>
+        <div class="tutItem">
+          <span class="ico">&#129378;</span>
+          <span class="name">A2 Ghee Jar</span>
+          <div class="desc">Power mode! +50 pts</div>
+        </div>
+        <div class="tutItem">
+          <span class="ico">&#129389;</span>
+          <span class="name">Mango Bonus</span>
+          <div class="desc">Big points &mdash; limited time</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Enemies -->
+    <div class="tutSection">
+      <div class="tutHead">&#9888;&#65039; AVOID &mdash; JUNK FOOD</div>
+      <div class="tutGrid">
+        <div class="tutItem enemy">
+          <span class="ico">&#129380;</span>
+          <span class="name">Soda Can</span>
+          <div class="desc">Angry &amp; fizzy</div>
+        </div>
+        <div class="tutItem enemy">
+          <span class="ico">&#127839;</span>
+          <span class="name">Chips Packet</span>
+          <div class="desc">Greasy trouble</div>
+        </div>
+        <div class="tutItem enemy">
+          <span class="ico">&#127852;</span>
+          <span class="name">Candy</span>
+          <div class="desc">Sugary villain</div>
+        </div>
+        <div class="tutItem enemy">
+          <span class="ico">&#9760;&#65039;</span>
+          <span class="name">Pesticide</span>
+          <div class="desc">Toxic chemical</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Power-ups -->
+    <div class="tutSection">
+      <div class="tutHead">&#9889; POWER-UPS</div>
+      <div class="tutGrid">
+        <div class="tutItem">
+          <span class="ico">&#128168;</span>
+          <span class="name">Speed</span>
+          <div class="desc">Move 1.5&times; faster</div>
+        </div>
+        <div class="tutItem">
+          <span class="ico">&#129517;</span>
+          <span class="name">Magnet</span>
+          <div class="desc">Auto-collect nearby dots</div>
+        </div>
+        <div class="tutItem">
+          <span class="ico">&#10052;&#65039;</span>
+          <span class="name">Freeze</span>
+          <div class="desc">Stop all enemies</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Pro tip -->
+    <div class="tutSection">
+      <div class="tutHead">&#128161; PRO TIP</div>
+      <div class="tutText">
+        Eating an <b>A2 Ghee jar</b> makes enemies scared &mdash;
+        chase them for bonus points! Combo them for <b>2x, 4x, 8x</b> multipliers.
+      </div>
+    </div>
+
+    <button class="tutCta">LET'S PLAY!</button>
+  </div>
+</div>
+
 <!-- First-time swipe hint overlay (fades out after few seconds / first swipe) -->
 <div id="swipeHint">
   <div class="box">
