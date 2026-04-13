@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#012a24">
+<meta name="format-detection" content="telephone=no">
+<title>Anveshan | Pac-Man</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{
+  background:#012a24;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  min-height:100vh;min-height:100dvh;
+  font-family:'Courier New',monospace;
+  overflow:hidden;
+  touch-action:none;
+  overscroll-behavior:none;
+  -webkit-overflow-scrolling:none;
+  position:fixed;width:100%;height:100%;
+}
+body{
+  padding-top:max(env(safe-area-inset-top),4px);
+  padding-bottom:max(env(safe-area-inset-bottom),4px);
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
+  justify-content:center;
+}
+#hdr{text-align:center;margin-bottom:4px;flex-shrink:0}
+#hdr h1{color:#f2cb05;font-size:clamp(14px,4vw,22px);letter-spacing:clamp(2px,1vw,4px);text-shadow:0 0 10px rgba(242,203,5,0.6)}
+#hdr .s{color:#4ecdc4;font-size:clamp(6px,1.8vw,10px);margin-top:2px;letter-spacing:clamp(1px,0.5vw,3px)}
+#hud{display:flex;justify-content:space-between;width:min(95vw,588px);padding:4px 8px;color:#fffbe8;font-size:clamp(9px,2.4vw,13px);font-weight:bold;flex-shrink:0}
+#hud .l{color:#7ab8a8;font-size:clamp(6px,1.6vw,8px);letter-spacing:1px;text-shadow:0 0 6px rgba(78,205,196,0.5)}
+#sc,#hi,#lv{text-shadow:0 0 8px rgba(242,203,5,0.8),0 0 14px rgba(242,203,5,0.4);letter-spacing:1px;transition:transform 0.15s ease-out;display:inline-block}
+#sc.pulse,#hi.pulse{animation:scorePulse 0.3s ease-out}
+@keyframes scorePulse{0%{transform:scale(1)}50%{transform:scale(1.2);color:#fff}100%{transform:scale(1)}}
+canvas{
+  display:block;
+  border:3px solid #00584B;
+  border-radius:4px;
+  box-shadow:0 0 20px rgba(0,88,75,0.5),0 0 40px rgba(242,203,5,0.15);
+  touch-action:none;
+  flex-shrink:1;
+  image-rendering:auto;
+  max-width:100%;
+  max-height:100%;
+}
+#bottomUI{display:flex;align-items:center;gap:15px;margin-top:4px;flex-shrink:0}
+#lives{color:#f2cb05;font-size:clamp(12px,3vw,16px)}
+#startBtn{display:none;margin:6px auto;padding:14px 36px;background:rgba(242,203,5,0.2);border:2px solid #f2cb05;border-radius:12px;color:#f2cb05;font-size:16px;font-family:monospace;font-weight:bold;letter-spacing:2px;cursor:pointer;touch-action:manipulation;animation:pulseBtn 1.5s ease-in-out infinite;min-width:44px;min-height:44px}
+@keyframes pulseBtn{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.7;transform:scale(0.97)}}
+#startBtn:active{background:rgba(242,203,5,0.4);transform:scale(0.95)}
+#startBtn.hidden{display:none!important}
+#pauseBtn{min-width:44px;min-height:36px}
+#dpad{display:none;position:relative;width:clamp(140px,38vw,170px);height:clamp(140px,38vw,170px);margin:6px auto 0;flex-shrink:0}
+.db{position:absolute;width:clamp(48px,13vw,56px);height:clamp(48px,13vw,56px);background:rgba(0,88,75,0.75);border:2px solid #4ecdc4;border-radius:14px;color:#f2cb05;font-size:clamp(22px,6vw,26px);display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation}
+.db:active{background:rgba(78,205,196,0.5);transform:scale(0.9)}
+#bu{top:0;left:50%;transform:translateX(-50%)}
+#bd{bottom:0;left:50%;transform:translateX(-50%)}
+#bl{top:50%;left:0;transform:translateY(-50%)}
+#br{top:50%;right:0;transform:translateY(-50%)}
+#bu:active{transform:translateX(-50%) scale(0.9)}
+#bd:active{transform:translateX(-50%) scale(0.9)}
+#bl:active{transform:translateY(-50%) scale(0.9)}
+#br:active{transform:translateY(-50%) scale(0.9)}
+#ft{margin-top:4px;color:#2a6b5e;font-size:7px;letter-spacing:2px;flex-shrink:0}
+
+/* Desktop */
+@media(min-width:601px) and (pointer:fine){
+  #startBtn{display:none}
+  #dpad{display:none}
+}
+
+/* Mobile / touch devices */
+@media(max-width:600px),(pointer:coarse){
+  body{justify-content:flex-start;padding-top:max(env(safe-area-inset-top),6px)}
+  #hdr{margin-bottom:2px}
+  #hud{padding:2px 6px}
+  #dpad{display:block}
+  #startBtn{display:block}
+  #startBtn.hidden{display:none!important}
+  #ft{display:none}
+}
+
+/* Landscape orientation hint on short screens */
+@media(max-height:500px) and (orientation:landscape){
+  #hdr{display:none}
+  #ft{display:none}
+  canvas{max-height:70vh}
+}
+</style>
+</head>
+<body>
+<div id="hdr"><h1>ANVESHAN</h1><div class="s">ONE STEP CLOSER TO PURITY</div></div>
+<div id="hud">
+  <div><div class="l">SCORE</div><div id="sc">0</div></div>
+  <div><div class="l">HIGH</div><div id="hi">0</div></div>
+  <div><div class="l">LEVEL</div><div id="lv">1</div></div>
+</div>
+<canvas id="cv"></canvas>
+<button id="startBtn">TAP TO START</button>
+<div id="bottomUI">
+  <div id="lives"></div>
+  <button id="pauseBtn" style="background:rgba(0,88,75,0.5);border:2px solid #00584B;border-radius:8px;color:#f2cb05;font-size:11px;font-family:monospace;padding:6px 16px;cursor:pointer;letter-spacing:1px">PAUSE</button>
+</div>
+<div id="dpad">
+  <div class="db" id="bu">&#9650;</div><div class="db" id="bd">&#9660;</div>
+  <div class="db" id="bl">&#9664;</div><div class="db" id="br">&#9654;</div>
+</div>
+<div id="ft">ANVESHAN 2026</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
