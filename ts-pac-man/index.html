@@ -209,6 +209,31 @@ canvas{
   margin:0 -18px;          /* extend to screen edges for full swipe area */
   padding:0;
 }
+
+/* --- Progress bar (auto-play indicator) --- */
+#tutorial .tutProgress{
+  height:3px;
+  margin:4px 18px 8px;
+  background:rgba(78,205,196,0.15);
+  border-radius:2px;
+  overflow:hidden;
+  position:relative;
+}
+#tutorial .tutProgressFill{
+  position:absolute;
+  top:0; left:0;
+  height:100%;
+  width:0%;
+  background:linear-gradient(to right,#f2cb05,#4ecdc4);
+  box-shadow:0 0 6px rgba(242,203,5,0.6);
+  border-radius:2px;
+  transition:width 0.1s linear;
+}
+#tutorial .tutProgress.paused .tutProgressFill{
+  background:linear-gradient(to right,#7ab8a8,#7ab8a8);
+  opacity:0.5;
+  box-shadow:none;
+}
 #tutorial .tutTrack{
   display:flex;
   overflow-x:auto;
@@ -541,6 +566,11 @@ canvas{
 
     <!-- Slide counter -->
     <div class="tutCounter"><b id="tutCurrent">1</b> / <span id="tutTotal">6</span></div>
+
+    <!-- Auto-play progress bar -->
+    <div class="tutProgress" id="tutProgress">
+      <div class="tutProgressFill" id="tutProgressFill"></div>
+    </div>
 
     <!-- Carousel: 6 swipeable slides -->
     <div class="tutCarousel">

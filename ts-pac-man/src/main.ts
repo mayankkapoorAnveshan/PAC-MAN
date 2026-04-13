@@ -154,11 +154,67 @@ const tutPrev = document.getElementById('tutPrev') as HTMLButtonElement | null;
 const tutNext = document.getElementById('tutNext') as HTMLButtonElement | null;
 const tutCurrent = document.getElementById('tutCurrent') as HTMLElement | null;
 const tutTotal = document.getElementById('tutTotal') as HTMLElement | null;
+const tutProgress = document.getElementById('tutProgress') as HTMLElement | null;
+const tutProgressFill = document.getElementById('tutProgressFill') as HTMLElement | null;
 const TUTORIAL_SEEN_KEY = 'anveshan_tutorial_seen';
+
+// Auto-play config: each slide shows for this long before advancing
+const AUTOPLAY_DURATION_MS = 4500;
+const PROGRESS_TICK_MS = 50;   // how often we update the progress bar
 
 const slides = tutTrack ? Array.from(tutTrack.querySelectorAll<HTMLElement>('.tutSlide')) : [];
 const SLIDE_COUNT = slides.length;
 let currentSlide = 0;
+
+// Auto-play state: timer handle + elapsed tracker for progress bar
+let autoPlayTimer: number | undefined;
+let autoPlayElapsed = 0;
+let autoPlayPausedByUser = false;  // once true, stays paused — user took control
+
+// Stop any running auto-play timer and clear progress bar
+function stopAutoPlay(): void {
+  if (autoPlayTimer !== undefined) {
+    clearInterval(autoPlayTimer);
+    autoPlayTimer = undefined;
+  }
+  autoPlayElapsed = 0;
+  if (tutProgressFill) tutProgressFill.style.width = '0%';
+}
+
+// Mark auto-play as paused (user interacted) — shows grey progress bar
+function pauseAutoPlay(): void {
+  stopAutoPlay();
+  autoPlayPausedByUser = true;
+  if (tutProgress) tutProgress.classList.add('paused');
+  // Leave progress bar at 100% grey so user knows it's been paused
+  if (tutProgressFill) tutProgressFill.style.width = '100%';
+}
+
+// Start auto-play from scratch for the current slide
+// Progress bar fills up over AUTOPLAY_DURATION_MS then advances to next slide
+function startAutoPlay(): void {
+  // Don't auto-play if user already interacted, or if we're on the last slide
+  if (autoPlayPausedByUser) return;
+  if (currentSlide >= SLIDE_COUNT - 1) return;
+
+  stopAutoPlay();
+  autoPlayElapsed = 0;
+  if (tutProgress) tutProgress.classList.remove('paused');
+  if (tutProgressFill) tutProgressFill.style.width = '0%';
+
+  autoPlayTimer = window.setInterval(() => {
+    autoPlayElapsed += PROGRESS_TICK_MS;
+    // Update progress bar width (0% → 100% over duration)
+    const pct = Math.min(100, (autoPlayElapsed / AUTOPLAY_DURATION_MS) * 100);
+    if (tutProgressFill) tutProgressFill.style.width = `${pct}%`;
+
+    // When full, advance to next slide
+    if (autoPlayElapsed >= AUTOPLAY_DURATION_MS) {
+      stopAutoPlay();
+      goToSlide(currentSlide + 1);
+    }
+  }, PROGRESS_TICK_MS);
+}
 
 // Build pagination dots dynamically
 function buildDots(): void {
@@ -168,7 +224,8 @@ function buildDots(): void {
     const dot = document.createElement('button');
     dot.className = 'tutDot';
     dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
-    dot.addEventListener('click', () => goToSlide(i));
+    // Tapping a dot is explicit navigation → pause auto-play
+    dot.addEventListener('click', () => { pauseAutoPlay(); goToSlide(i); });
     tutDotsContainer.appendChild(dot);
   }
 }
@@ -208,23 +265,37 @@ function updateCarouselUI(index: number): void {
   if (typeof navigator !== 'undefined' && navigator.vibrate) {
     try { navigator.vibrate(8); } catch { /* vibration blocked */ }
   }
+
+  // Restart auto-play timer for this new slide (if user hasn't paused it)
+  startAutoPlay();
 }
 
 // Listen to native scroll and keep UI in sync with the user's swipe
+// Also marks user interaction → auto-play pauses permanently for this session
 let scrollDebounce: number | undefined;
+let userInitiatedScroll = false;
+tutTrack?.addEventListener('touchstart', () => { userInitiatedScroll = true; }, { passive: true });
 tutTrack?.addEventListener('scroll', () => {
-  // Debounce — update when scroll settles, not on every pixel
   if (scrollDebounce) clearTimeout(scrollDebounce);
   scrollDebounce = window.setTimeout(() => {
     if (!tutTrack) return;
     const idx = Math.round(tutTrack.scrollLeft / tutTrack.offsetWidth);
-    if (idx !== currentSlide) updateCarouselUI(idx);
+    if (idx !== currentSlide) {
+      // User swiped manually → pause auto-play
+      if (userInitiatedScroll) pauseAutoPlay();
+      updateCarouselUI(idx);
+      userInitiatedScroll = false;
+    }
   }, 60);
 });
 
-// Prev/next button handlers
-tutPrev?.addEventListener('click', () => goToSlide(currentSlide - 1));
-tutNext?.addEventListener('click', () => goToSlide(currentSlide + 1));
+// Prev/next button handlers — also pause auto-play (explicit user action)
+tutPrev?.addEventListener('click', () => { pauseAutoPlay(); goToSlide(currentSlide - 1); });
+tutNext?.addEventListener('click', () => { pauseAutoPlay(); goToSlide(currentSlide + 1); });
+
+// Tap directly on a slide (without swiping) also pauses auto-play
+// Gives user control to read at their own pace without accidentally advancing
+tutTrack?.addEventListener('click', () => { if (!autoPlayPausedByUser) pauseAutoPlay(); });
 
 // Open the tutorial overlay
 function showTutorial(): void {
@@ -232,6 +303,9 @@ function showTutorial(): void {
   tutorial.classList.remove('hide');
   tutorial.classList.add('show');
   tutorial.scrollTop = 0;
+  // Reset auto-play state — fresh run every time tutorial opens
+  autoPlayPausedByUser = false;
+  if (tutProgress) tutProgress.classList.remove('paused');
   // Reset to first slide every time we open
   goToSlide(0);
   // Force immediate UI sync (scroll event won't fire if already at 0)
@@ -246,6 +320,8 @@ function showTutorial(): void {
 // Close the tutorial overlay and mark as seen
 function hideTutorial(): void {
   if (!tutorial) return;
+  // Stop any running auto-play timer so it doesn't fire after close
+  stopAutoPlay();
   tutorial.classList.add('hide');
   setTimeout(() => {
     tutorial.classList.remove('show', 'hide');
