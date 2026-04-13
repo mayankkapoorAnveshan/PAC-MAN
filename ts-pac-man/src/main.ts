@@ -10,31 +10,48 @@ cv.width = W;     // internal resolution (crisp rendering)
 cv.height = H;
 const cx = cv.getContext('2d') as CanvasRenderingContext2D;
 
-// --- Responsive canvas sizing: fit viewport while preserving aspect ratio ---
+// ============================================================
+// RESPONSIVE CANVAS SIZING
+// Canvas internal resolution stays 588×644 (crisp pixel rendering).
+// CSS dimensions are calculated to fit the viewport while preserving
+// the game's aspect ratio. We measure the actual chrome (header + HUD
+// + lives bar + optional d-pad) and give the canvas ALL remaining space.
+// ============================================================
 function resizeCanvas(): void {
+  // Measure every fixed UI element that eats vertical space
   const headerH = (document.getElementById('hdr')?.offsetHeight ?? 0);
   const hudH = (document.getElementById('hud')?.offsetHeight ?? 0);
   const bottomH = (document.getElementById('bottomUI')?.offsetHeight ?? 0);
   const dpadEl = document.getElementById('dpad');
   const dpadVisible = dpadEl && getComputedStyle(dpadEl).display !== 'none';
   const dpadH = dpadVisible ? (dpadEl?.offsetHeight ?? 0) : 0;
-  const chrome = headerH + hudH + bottomH + dpadH + 60;  // padding buffer
 
-  const availW = window.innerWidth - 16;
+  // Tight buffer: only 24px total for margins/borders — previously 60 (wasted space)
+  // This is Option B: compact chrome, bigger canvas
+  const chrome = headerH + hudH + bottomH + dpadH + 24;
+
+  // Available area = viewport minus chrome and a small horizontal gutter
+  const availW = window.innerWidth - 8;   // 8px side breathing room
   const availH = window.innerHeight - chrome;
 
   const aspect = W / H;
+
+  // Start with width-constrained fit
   let cssW = Math.min(availW, W);
   let cssH = cssW / aspect;
+
+  // If that overflows height, switch to height-constrained fit
   if (cssH > availH) {
-    cssH = Math.max(availH, 200);
+    cssH = Math.max(availH, 200);  // never go below 200px tall
     cssW = cssH * aspect;
   }
+
   cv.style.width = `${Math.floor(cssW)}px`;
   cv.style.height = `${Math.floor(cssH)}px`;
 }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
+// Delay orientation change to let browser settle on new dimensions
 window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 100));
 
 const scE = document.getElementById('sc') as HTMLElement;

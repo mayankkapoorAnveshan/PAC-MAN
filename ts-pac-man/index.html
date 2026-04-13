@@ -159,12 +159,21 @@ canvas{
   #dpad{display:none}
 }
 
-/* Mobile / touch devices — SWIPE ONLY, no d-pad */
+/* Mobile / touch devices — SWIPE ONLY, no d-pad, compact HUD for bigger canvas */
 @media(max-width:600px),(pointer:coarse){
-  /* Center content vertically so empty space splits evenly above & below */
-  body{justify-content:center}
-  #hdr{margin-bottom:2px}
-  #hud{padding:2px 6px}
+  /* Center content vertically so any leftover space splits evenly */
+  body{justify-content:center;padding-top:4px;padding-bottom:4px}
+  /* Compact header: smaller title, no tagline, tight margin */
+  #hdr{margin-bottom:1px}
+  #hdr h1{font-size:13px;letter-spacing:2px}
+  #hdr .s{display:none}
+  /* Compact HUD: thin padding, small labels */
+  #hud{padding:1px 6px;font-size:10px}
+  #hud .l{font-size:6px}
+  /* Lives row compact */
+  #bottomUI{margin-top:2px;gap:8px}
+  #lives{font-size:11px}
+  /* Disable unnecessary elements */
   #dpad{display:none!important}
   #startBtn{display:block}
   #startBtn.hidden{display:none!important}
