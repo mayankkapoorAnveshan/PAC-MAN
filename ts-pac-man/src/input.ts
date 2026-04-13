@@ -36,18 +36,41 @@ export function setupInput(
     if (state.paused) state.paused = false;
   });
 
-  // Touch swipe on canvas for direction
+  // --- Touch swipe controls (mobile/tablet) ---
+  // Continuous swipe: direction changes the moment finger crosses threshold,
+  // then resets origin so player can change direction without lifting finger.
   let ttx = 0, tty = 0;
+  const SWIPE_THRESHOLD = 20;  // px — how far to swipe before direction registers
+
+  function applySwipeDirection(ddx: number, ddy: number): void {
+    if (Math.abs(ddx) > Math.abs(ddy)) {
+      state.ndx = ddx > 0 ? 1 : -1;
+      state.ndy = 0;
+    } else {
+      state.ndx = 0;
+      state.ndy = ddy > 0 ? 1 : -1;
+    }
+    if (state.paused) state.paused = false;
+  }
 
   canvas.addEventListener('touchstart', (e: TouchEvent) => {
     e.preventDefault();
-    if (state.gameover && state.goT <= 0) doRestart();
+    if (state.gameover && state.goT <= 0) { doRestart(); return; }
+    if (!state.started) { doStart(); return; }
     ttx = e.touches[0].clientX;
     tty = e.touches[0].clientY;
   }, { passive: false });
 
   canvas.addEventListener('touchmove', (e: TouchEvent) => {
     e.preventDefault();
+    if (!state.started) return;
+    const ddx = e.touches[0].clientX - ttx;
+    const ddy = e.touches[0].clientY - tty;
+    if (Math.abs(ddx) < SWIPE_THRESHOLD && Math.abs(ddy) < SWIPE_THRESHOLD) return;
+    applySwipeDirection(ddx, ddy);
+    // Reset origin so next swipe in another direction registers immediately
+    ttx = e.touches[0].clientX;
+    tty = e.touches[0].clientY;
   }, { passive: false });
 
   canvas.addEventListener('touchend', (e: TouchEvent) => {
@@ -55,10 +78,8 @@ export function setupInput(
     if (!state.started) return;
     const ddx = e.changedTouches[0].clientX - ttx;
     const ddy = e.changedTouches[0].clientY - tty;
-    if (Math.abs(ddx) < 15 && Math.abs(ddy) < 15) return;
-    if (Math.abs(ddx) > Math.abs(ddy)) { state.ndx = ddx > 0 ? 1 : -1; state.ndy = 0; }
-    else { state.ndx = 0; state.ndy = ddy > 0 ? 1 : -1; }
-    if (state.paused) state.paused = false;
+    if (Math.abs(ddx) < SWIPE_THRESHOLD && Math.abs(ddy) < SWIPE_THRESHOLD) return;
+    applySwipeDirection(ddx, ddy);
   }, { passive: false });
 
   canvas.addEventListener('click', () => {

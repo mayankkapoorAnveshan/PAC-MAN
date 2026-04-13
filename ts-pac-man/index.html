@@ -74,12 +74,12 @@ canvas{
   #dpad{display:none}
 }
 
-/* Mobile / touch devices */
+/* Mobile / touch devices — SWIPE ONLY, no d-pad */
 @media(max-width:600px),(pointer:coarse){
   body{justify-content:flex-start;padding-top:max(env(safe-area-inset-top),6px)}
   #hdr{margin-bottom:2px}
   #hud{padding:2px 6px}
-  #dpad{display:block}
+  #dpad{display:none!important}
   #startBtn{display:block}
   #startBtn.hidden{display:none!important}
   #ft{display:none}
