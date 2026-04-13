@@ -94,14 +94,21 @@ export function setupInput(
   }
 
   // Check if a touch event target is part of the game area (canvas/body)
-  // and NOT a button like Pause/Start — we don't want swipes to consume button taps
+  // and NOT a button like Pause/Start — we don't want swipes to consume button taps.
+  // Also rejects ANY touch that happens while the tutorial overlay is open,
+  // so carousel swipes never leak into the game as cow-direction changes.
   function isGameTarget(target: EventTarget | null): boolean {
+    // Global guard — if tutorial is visible, game never accepts touches
+    const tut = document.getElementById('tutorial');
+    if (tut && tut.classList.contains('show')) return false;
     if (!target) return true;
     const el = target as HTMLElement;
     // Reject direct button clicks so their own handlers still fire
     if (el.tagName === 'BUTTON') return false;
     // Also reject anything nested inside a button (button icons, text spans)
     if (el.closest && el.closest('button')) return false;
+    // Reject touches originating inside the tutorial subtree (carousel etc.)
+    if (el.closest && el.closest('#tutorial')) return false;
     return true;
   }
 

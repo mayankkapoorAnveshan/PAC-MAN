@@ -231,14 +231,24 @@ function buildDots(): void {
 }
 
 // Programmatically scroll to a specific slide
+// Sets programmaticScroll flag so the scroll event handler knows not to
+// interpret this movement as a user swipe (which would pause auto-play)
 function goToSlide(index: number): void {
   if (!tutTrack) return;
   const clamped = Math.max(0, Math.min(SLIDE_COUNT - 1, index));
+  programmaticScroll = true;
   tutTrack.scrollTo({ left: clamped * tutTrack.offsetWidth, behavior: 'smooth' });
+  // Immediately sync UI — no need to wait for scroll event
+  updateCarouselUI(clamped);
 }
 
 // Update dots, counter, button states, CTA readiness, and trigger slide animations
 function updateCarouselUI(index: number): void {
+  // No-op if we're already showing this slide — prevents re-triggering
+  // animations/haptics from duplicate events (scroll + explicit call race)
+  if (index === currentSlide && slides[index]?.classList.contains('active')) {
+    return;
+  }
   currentSlide = index;
 
   // Sync pagination dots
@@ -274,18 +284,33 @@ function updateCarouselUI(index: number): void {
 // Also marks user interaction → auto-play pauses permanently for this session
 let scrollDebounce: number | undefined;
 let userInitiatedScroll = false;
+let programmaticScroll = false;  // set true when we call scrollTo() ourselves
 tutTrack?.addEventListener('touchstart', () => { userInitiatedScroll = true; }, { passive: true });
 tutTrack?.addEventListener('scroll', () => {
   if (scrollDebounce) clearTimeout(scrollDebounce);
   scrollDebounce = window.setTimeout(() => {
     if (!tutTrack) return;
     const idx = Math.round(tutTrack.scrollLeft / tutTrack.offsetWidth);
-    if (idx !== currentSlide) {
-      // User swiped manually → pause auto-play
-      if (userInitiatedScroll) pauseAutoPlay();
-      updateCarouselUI(idx);
+
+    // Guard: ignore scroll events triggered by our own goToSlide() call.
+    // Only human-initiated scroll (user swipe) should pause auto-play.
+    if (programmaticScroll) {
+      programmaticScroll = false;
       userInitiatedScroll = false;
+      return;
     }
+
+    // Early return if the position hasn't actually changed — avoids
+    // re-running updateCarouselUI which would re-trigger animations + haptics
+    if (idx === currentSlide) {
+      userInitiatedScroll = false;
+      return;
+    }
+
+    // Real user swipe → pause auto-play permanently for this session
+    if (userInitiatedScroll) pauseAutoPlay();
+    updateCarouselUI(idx);
+    userInitiatedScroll = false;
   }, 60);
 });
 

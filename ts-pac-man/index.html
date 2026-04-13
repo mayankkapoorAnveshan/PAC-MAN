@@ -121,6 +121,8 @@ canvas{
   -webkit-overflow-scrolling:touch;
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   animation:tutFadeIn 0.35s ease-out;
+  /* Allow vertical scroll for long content; carousel track overrides below */
+  touch-action:pan-y;
 }
 #tutorial.show{display:block}
 #tutorial.hide{animation:tutFadeOut 0.3s ease-out forwards}
@@ -242,6 +244,8 @@ canvas{
   scroll-behavior:smooth;
   -webkit-overflow-scrolling:touch;
   scrollbar-width:none;    /* Firefox */
+  /* Horizontal gestures only on the track — prevents conflict with vertical scroll */
+  touch-action:pan-x;
 }
 #tutorial .tutTrack::-webkit-scrollbar{display:none}  /* Chrome/Safari */
 #tutorial .tutSlide{
