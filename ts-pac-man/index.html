@@ -199,6 +199,131 @@ canvas{
 #tutorial .tutItem .desc{color:#fffbe8;opacity:0.75;font-size:9px}
 #tutorial .tutItem.enemy{border-color:rgba(231,76,60,0.3)}
 #tutorial .tutItem.enemy .name{color:#ff8a80}
+
+/* ============================================================
+   CAROUSEL: horizontal swipe slides with scroll-snap
+   Industry-standard mobile onboarding pattern.
+   ============================================================ */
+#tutorial .tutCarousel{
+  position:relative;
+  margin:0 -18px;          /* extend to screen edges for full swipe area */
+  padding:0;
+}
+#tutorial .tutTrack{
+  display:flex;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;    /* Firefox */
+}
+#tutorial .tutTrack::-webkit-scrollbar{display:none}  /* Chrome/Safari */
+#tutorial .tutSlide{
+  flex:0 0 100%;
+  scroll-snap-align:center;
+  scroll-snap-stop:always;
+  padding:14px 18px 20px;
+  min-height:280px;
+  box-sizing:border-box;
+}
+
+/* Slide content animates in when it becomes visible */
+#tutorial .tutSlide .tutHead,
+#tutorial .tutSlide .tutText,
+#tutorial .tutSlide .tutGrid{
+  opacity:0;
+  transform:translateY(18px);
+  transition:opacity 0.5s ease-out,transform 0.5s ease-out;
+}
+#tutorial .tutSlide.active .tutHead{opacity:1;transform:translateY(0);transition-delay:0.05s}
+#tutorial .tutSlide.active .tutText{opacity:1;transform:translateY(0);transition-delay:0.15s}
+#tutorial .tutSlide.active .tutGrid{opacity:1;transform:translateY(0);transition-delay:0.2s}
+#tutorial .tutSlide.active .tutItem{animation:itemPop 0.5s ease-out backwards}
+#tutorial .tutSlide.active .tutItem:nth-child(1){animation-delay:0.25s}
+#tutorial .tutSlide.active .tutItem:nth-child(2){animation-delay:0.35s}
+#tutorial .tutSlide.active .tutItem:nth-child(3){animation-delay:0.45s}
+#tutorial .tutSlide.active .tutItem:nth-child(4){animation-delay:0.55s}
+@keyframes itemPop{
+  0%{opacity:0;transform:scale(0.85) translateY(10px)}
+  100%{opacity:1;transform:scale(1) translateY(0)}
+}
+
+/* Pagination dots */
+#tutorial .tutDots{
+  display:flex;
+  justify-content:center;
+  gap:8px;
+  margin:8px 0 4px;
+}
+#tutorial .tutDot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:rgba(78,205,196,0.3);
+  border:1px solid rgba(78,205,196,0.5);
+  cursor:pointer;
+  touch-action:manipulation;
+  padding:0;
+  transition:all 0.25s ease-out;
+}
+#tutorial .tutDot.active{
+  background:#f2cb05;
+  border-color:#f2cb05;
+  transform:scale(1.3);
+  box-shadow:0 0 8px rgba(242,203,5,0.7);
+}
+
+/* Slide counter */
+#tutorial .tutCounter{
+  text-align:center;
+  font-size:9px;
+  color:#7ab8a8;
+  letter-spacing:1px;
+  margin-bottom:4px;
+}
+#tutorial .tutCounter b{color:#4ecdc4}
+
+/* Prev / next buttons */
+#tutorial .tutNav{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:6px;
+}
+#tutorial .tutNav button{
+  flex:1;
+  padding:10px;
+  background:rgba(0,88,75,0.6);
+  border:1.5px solid #4ecdc4;
+  border-radius:10px;
+  color:#4ecdc4;
+  font-size:11px;
+  font-family:monospace;
+  font-weight:bold;
+  letter-spacing:1px;
+  cursor:pointer;
+  touch-action:manipulation;
+  min-height:40px;
+}
+#tutorial .tutNav button:disabled{opacity:0.35;cursor:default}
+#tutorial .tutNav button:not(:disabled):active{background:rgba(78,205,196,0.4);transform:scale(0.96)}
+
+/* Skip button — top-right of header area */
+#tutorial .tutSkip{
+  background:none;
+  border:none;
+  color:#7ab8a8;
+  font-family:monospace;
+  font-size:10px;
+  letter-spacing:1px;
+  text-decoration:underline;
+  cursor:pointer;
+  padding:6px 10px;
+  margin-right:8px;
+}
+#tutorial .tutSkip:active{color:#4ecdc4}
+
 #tutorial .tutCta{
   display:block;
   width:100%;
@@ -218,6 +343,9 @@ canvas{
   box-shadow:0 0 16px rgba(242,203,5,0.2);
 }
 #tutorial .tutCta:active{background:rgba(242,203,5,0.45);transform:scale(0.98)}
+#tutorial .tutCta{opacity:0.4;pointer-events:none;transition:opacity 0.35s ease-out}
+#tutorial .tutCta.ready{opacity:1;pointer-events:auto;animation:ctaGlow 1.6s ease-in-out infinite}
+@keyframes ctaGlow{0%,100%{box-shadow:0 0 16px rgba(242,203,5,0.2)}50%{box-shadow:0 0 28px rgba(242,203,5,0.5)}}
 
 /* ============================================================
    TOP LEADERBOARD PANEL
@@ -405,108 +533,129 @@ canvas{
   <div class="tutWrap">
     <div class="tutHeader">
       <div class="tutTitle">HOW TO PLAY</div>
-      <button class="tutClose" aria-label="Close tutorial">&#10005;</button>
-    </div>
-
-    <!-- 1. Objective / story -->
-    <div class="tutSection">
-      <div class="tutHead">&#127919; OBJECTIVE</div>
-      <div class="tutText">
-        You are a <b>desi cow</b> on a journey of purity!
-        Collect <b>honey drops</b>, eat <b>A2 ghee</b> for power,
-        and chase away the adulterated junk food polluting the maze.
+      <div style="display:flex;align-items:center">
+        <button class="tutSkip" aria-label="Skip tutorial">SKIP</button>
+        <button class="tutClose" aria-label="Close tutorial">&#10005;</button>
       </div>
     </div>
 
-    <!-- 2. Controls -->
-    <div class="tutSection">
-      <div class="tutHead">&#128070; CONTROLS</div>
-      <div class="tutText">
-        &bull; <b>Swipe</b> anywhere &mdash; change direction<br>
-        &bull; <b>Double-tap</b> &mdash; pause / resume<br>
-        &bull; <b>Arrow keys / WASD</b> &mdash; desktop play<br>
-        &bull; <b>? button</b> &mdash; reopen this guide anytime
+    <!-- Slide counter -->
+    <div class="tutCounter"><b id="tutCurrent">1</b> / <span id="tutTotal">6</span></div>
+
+    <!-- Carousel: 6 swipeable slides -->
+    <div class="tutCarousel">
+      <div class="tutTrack" id="tutTrack">
+        <!-- Slide 1: Objective -->
+        <div class="tutSlide">
+          <div class="tutHead">&#127919; OBJECTIVE</div>
+          <div class="tutText">
+            You are a <b>desi cow</b> on a journey of purity!
+            Collect <b>honey drops</b>, eat <b>A2 ghee</b> for power,
+            and chase away the adulterated junk food polluting the maze.
+          </div>
+        </div>
+
+        <!-- Slide 2: Controls -->
+        <div class="tutSlide">
+          <div class="tutHead">&#128070; CONTROLS</div>
+          <div class="tutText">
+            &bull; <b>Swipe</b> anywhere &mdash; change direction<br>
+            &bull; <b>Double-tap</b> &mdash; pause / resume<br>
+            &bull; <b>Arrow keys / WASD</b> &mdash; desktop play<br>
+            &bull; <b>? button</b> &mdash; reopen this guide anytime
+          </div>
+        </div>
+
+        <!-- Slide 3: Collect -->
+        <div class="tutSlide">
+          <div class="tutHead">&#11088; COLLECT</div>
+          <div class="tutGrid">
+            <div class="tutItem">
+              <span class="ico">&#127855;</span>
+              <span class="name">Honey Drop</span>
+              <div class="desc">+10 points each</div>
+            </div>
+            <div class="tutItem">
+              <span class="ico">&#129378;</span>
+              <span class="name">A2 Ghee Jar</span>
+              <div class="desc">Power mode! +50 pts</div>
+            </div>
+            <div class="tutItem">
+              <span class="ico">&#129389;</span>
+              <span class="name">Mango Bonus</span>
+              <div class="desc">Big points &mdash; limited time</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 4: Enemies -->
+        <div class="tutSlide">
+          <div class="tutHead">&#9888;&#65039; AVOID &mdash; JUNK FOOD</div>
+          <div class="tutGrid">
+            <div class="tutItem enemy">
+              <span class="ico">&#129380;</span>
+              <span class="name">Soda Can</span>
+              <div class="desc">Angry &amp; fizzy</div>
+            </div>
+            <div class="tutItem enemy">
+              <span class="ico">&#127839;</span>
+              <span class="name">Chips Packet</span>
+              <div class="desc">Greasy trouble</div>
+            </div>
+            <div class="tutItem enemy">
+              <span class="ico">&#127852;</span>
+              <span class="name">Candy</span>
+              <div class="desc">Sugary villain</div>
+            </div>
+            <div class="tutItem enemy">
+              <span class="ico">&#9760;&#65039;</span>
+              <span class="name">Pesticide</span>
+              <div class="desc">Toxic chemical</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 5: Power-ups -->
+        <div class="tutSlide">
+          <div class="tutHead">&#9889; POWER-UPS</div>
+          <div class="tutGrid">
+            <div class="tutItem">
+              <span class="ico">&#128168;</span>
+              <span class="name">Speed</span>
+              <div class="desc">Move 1.5&times; faster</div>
+            </div>
+            <div class="tutItem">
+              <span class="ico">&#129517;</span>
+              <span class="name">Magnet</span>
+              <div class="desc">Auto-collect nearby dots</div>
+            </div>
+            <div class="tutItem">
+              <span class="ico">&#10052;&#65039;</span>
+              <span class="name">Freeze</span>
+              <div class="desc">Stop all enemies</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 6: Pro tip -->
+        <div class="tutSlide">
+          <div class="tutHead">&#128161; PRO TIP</div>
+          <div class="tutText">
+            Eating an <b>A2 Ghee jar</b> makes enemies scared &mdash;
+            chase them for bonus points! Combo them for <b>2x, 4x, 8x</b> multipliers.<br><br>
+            Ready to start your journey of purity? <b>Let's go!</b>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- 3. Collect -->
-    <div class="tutSection">
-      <div class="tutHead">&#11088; COLLECT</div>
-      <div class="tutGrid">
-        <div class="tutItem">
-          <span class="ico">&#127855;</span>
-          <span class="name">Honey Drop</span>
-          <div class="desc">+10 points each</div>
-        </div>
-        <div class="tutItem">
-          <span class="ico">&#129378;</span>
-          <span class="name">A2 Ghee Jar</span>
-          <div class="desc">Power mode! +50 pts</div>
-        </div>
-        <div class="tutItem">
-          <span class="ico">&#129389;</span>
-          <span class="name">Mango Bonus</span>
-          <div class="desc">Big points &mdash; limited time</div>
-        </div>
-      </div>
-    </div>
+    <!-- Pagination dots (generated by JS) -->
+    <div class="tutDots" id="tutDots"></div>
 
-    <!-- 4. Enemies -->
-    <div class="tutSection">
-      <div class="tutHead">&#9888;&#65039; AVOID &mdash; JUNK FOOD</div>
-      <div class="tutGrid">
-        <div class="tutItem enemy">
-          <span class="ico">&#129380;</span>
-          <span class="name">Soda Can</span>
-          <div class="desc">Angry &amp; fizzy</div>
-        </div>
-        <div class="tutItem enemy">
-          <span class="ico">&#127839;</span>
-          <span class="name">Chips Packet</span>
-          <div class="desc">Greasy trouble</div>
-        </div>
-        <div class="tutItem enemy">
-          <span class="ico">&#127852;</span>
-          <span class="name">Candy</span>
-          <div class="desc">Sugary villain</div>
-        </div>
-        <div class="tutItem enemy">
-          <span class="ico">&#9760;&#65039;</span>
-          <span class="name">Pesticide</span>
-          <div class="desc">Toxic chemical</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 5. Power-ups -->
-    <div class="tutSection">
-      <div class="tutHead">&#9889; POWER-UPS</div>
-      <div class="tutGrid">
-        <div class="tutItem">
-          <span class="ico">&#128168;</span>
-          <span class="name">Speed</span>
-          <div class="desc">Move 1.5&times; faster</div>
-        </div>
-        <div class="tutItem">
-          <span class="ico">&#129517;</span>
-          <span class="name">Magnet</span>
-          <div class="desc">Auto-collect nearby dots</div>
-        </div>
-        <div class="tutItem">
-          <span class="ico">&#10052;&#65039;</span>
-          <span class="name">Freeze</span>
-          <div class="desc">Stop all enemies</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 6. Pro tip -->
-    <div class="tutSection">
-      <div class="tutHead">&#128161; PRO TIP</div>
-      <div class="tutText">
-        Eating an <b>A2 Ghee jar</b> makes enemies scared &mdash;
-        chase them for bonus points! Combo them for <b>2x, 4x, 8x</b> multipliers.
-      </div>
+    <!-- Prev / Next buttons -->
+    <div class="tutNav">
+      <button class="tutPrev" id="tutPrev">&larr; BACK</button>
+      <button class="tutNext" id="tutNext">NEXT &rarr;</button>
     </div>
 
     <button class="tutCta">LET'S PLAY!</button>
