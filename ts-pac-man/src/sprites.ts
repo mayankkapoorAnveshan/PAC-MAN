@@ -11,7 +11,6 @@ type Sprite = (string | null)[][];
 const _ = null;           // Transparent
 const W = '#FFFFFF';      // White
 const K = '#111111';      // Black / outline
-const BG = '#6B4226';     // Brown (legacy, enemy sprites)
 // Amul-style cow palette: bold, high-contrast cartoon feel
 const B = '#FFFFFF';      // Pure Amul white body
 const S = '#1C1C1C';      // Black spot patches
