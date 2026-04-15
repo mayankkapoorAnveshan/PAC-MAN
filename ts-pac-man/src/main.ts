@@ -189,7 +189,16 @@ function doModalRetry(): void {
 
 endRetry?.addEventListener('click', doModalRetry);
 endRetry?.addEventListener('touchstart', (e) => { e.preventDefault(); doModalRetry(); }, { passive: false });
-endCloseBtn?.addEventListener('click', hideEndModal);
+
+// Close (×) button exits the run — full page reload so the player gets a
+// clean state (leaderboard refreshed, tutorial available again, no stale
+// dim canvas behind the modal).
+function doModalExit(): void {
+  hideEndModal();
+  location.reload();
+}
+endCloseBtn?.addEventListener('click', doModalExit);
+endCloseBtn?.addEventListener('touchstart', (e) => { e.preventDefault(); doModalExit(); }, { passive: false });
 
 // Show start button again on game over (for mobile) + refresh leaderboard + popup
 let prevGameOver = false;
