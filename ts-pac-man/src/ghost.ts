@@ -21,7 +21,12 @@ export function moveGhost(g: Ghost, idx: number, state: GameState): void {
   const gc = Math.round(g.x);
   const gr = Math.round(g.y);
 
-  if (Math.abs(g.x - gc) < 0.04 && Math.abs(g.y - gr) < 0.04) {
+  // Alignment tolerance must scale with current speed (same reason as the
+  // cow in game.ts) — a hard-coded 0.04 would let fast ghosts skip past
+  // tile centers on higher levels and glitch through walls. We also keep
+  // a 0.05 floor so slow/frightened ghosts still settle cleanly on tiles.
+  const alignTol = Math.max(0.05, s * 0.6);
+  if (Math.abs(g.x - gc) < alignTol && Math.abs(g.y - gr) < alignTol) {
     g.x = gc;
     g.y = gr;
     if (g.x < 0) g.x = COLS - 1;

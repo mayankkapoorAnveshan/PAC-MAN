@@ -66,9 +66,14 @@ export function drawMap(cx: CanvasRenderingContext2D, state: GameState): void {
 // Sprite changes based on movement direction
 // ============================================================
 
-// Smooth position tracking for visual interpolation
+// Smooth position tracking for visual interpolation.
+// LERP controls how quickly the rendered cow chases the simulation's
+// logical state.px/state.py. A higher value = snappier, tighter feel but
+// more visible when cornering snaps occur; lower = buttery smooth but can
+// look floaty. 0.65 is the sweet spot — hides the ~0.2-tile cornering
+// assist snap almost completely while staying responsive to input.
 let smoothPX = 10, smoothPY = 15;
-const LERP = 0.55; // Snappier follow — less visual lag behind real position
+const LERP = 0.65;
 
 export function drawPacMan(cx: CanvasRenderingContext2D, state: GameState): void {
   // Lerp toward actual position for smooth rendering

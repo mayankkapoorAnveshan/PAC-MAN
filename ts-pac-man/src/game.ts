@@ -48,8 +48,12 @@ function resetPositions(state: GameState): void {
   state.px = 10; state.py = 15;
   state.dx = 0; state.dy = 0;
   state.ndx = 0; state.ndy = 0;
-  // Speed ramp: cow gets slightly faster each level
-  state.spd = Math.min(0.1 + (state.level - 1) * 0.008, 0.16);
+  // Speed ramp: cow gets slightly faster each level.
+  // Previously 0.008 per level / cap 0.16 — felt jerky on L3 because the
+  // higher per-frame step made tile alignment harder and the cow felt
+  // "slippery". Softened to 0.005 per level / cap 0.13 so L3 plays smooth
+  // but still gives a noticeable difficulty bump over L1.
+  state.spd = Math.min(0.1 + (state.level - 1) * 0.005, 0.13);
   state.ghosts = createGhosts(state.level);
   state.frightTime = 0; state.eatCombo = 0;
   state.dead = false; state.deadT = 0;
@@ -190,14 +194,54 @@ export function gameLoop(
         }
       }
 
-      // Pac-Man movement
+      // ==========================================================
+      // COW MOVEMENT — tile-aligned logic + cornering assist
+      // ==========================================================
       const col = Math.round(state.px);
       const row = Math.round(state.py);
 
-      // Alignment tolerance scales with speed so faster levels still catch
-      // tile centers between frames. Needs to be at least spd/2 or the cow
-      // skips past tiles without ever registering dot-eat / wall-stop / turn.
-      const alignTol = Math.max(0.05, state.spd * 0.6);
+      // Standard alignment window — scales with current speed so the cow
+      // never skips past a tile center between frames. At L1 (spd 0.1)
+      // this is ~0.08 tiles; at L3 (spd 0.11) it's ~0.088. Without this,
+      // fractional frame positions could land at .928 → .044 around a tile
+      // and the cow would walk through walls / skip dots entirely.
+      const alignTol = Math.max(0.08, state.spd * 0.7);
+
+      // Cornering assist window — a WIDER buffer used ONLY when the player
+      // pre-buffers a perpendicular turn. Lets them swipe up to ~0.2 tiles
+      // early/late and still make the corner, giving the game a modern
+      // "Pac-Man CE" feel instead of punishing precise timing.
+      const cornerTol = 0.22;
+
+      // Is the buffered next-direction perpendicular to current motion?
+      // (e.g., cow going right, player swiped down) — only perpendicular
+      // turns get the cornering assist; straight reversals don't need it.
+      const wantsPerpTurn =
+        (state.ndx !== 0 || state.ndy !== 0) &&
+        ((state.dx !== 0 && state.ndy !== 0) || (state.dy !== 0 && state.ndx !== 0));
+
+      // Attempt a wide-tolerance cornering turn FIRST. If the cow is close
+      // enough to a tile center AND the perpendicular turn is legal, we
+      // snap her to the intersection and change direction. The snap is
+      // invisible at runtime because renderer.ts lerps smoothPX/PY toward
+      // state.px/py and the jump is small (≤0.22 tile).
+      if (
+        wantsPerpTurn &&
+        Math.abs(state.px - col) < cornerTol &&
+        Math.abs(state.py - row) < cornerTol &&
+        !(Math.abs(state.px - col) < alignTol && Math.abs(state.py - row) < alignTol)
+      ) {
+        const tx = col + state.ndx;
+        const ty = row + state.ndy;
+        const canTurn = tx < 0 || tx >= COLS || !isWall(state.map, tx, ty);
+        if (canTurn) {
+          state.px = col;
+          state.py = row;
+          state.dx = state.ndx;
+          state.dy = state.ndy;
+        }
+      }
+
       if (Math.abs(state.px - col) < alignTol && Math.abs(state.py - row) < alignTol) {
         state.px = col;
         state.py = row;
