@@ -842,53 +842,141 @@ export function drawObjectiveProgress(cx: CanvasRenderingContext2D, state: GameS
 // ============================================================
 
 let overlayAlpha = 0;
+let startScreenFrame = 0;
+
+// Floating honey-drop particle pool for the start screen background.
+// Positions are fixed; a sine offset gives the hypnotic drifting motion.
+const startParticles = Array.from({ length: 18 }, (_, i) => ({
+  baseX: ((i * 61) % W),
+  baseY: ((i * 113) % H),
+  phase: i * 0.7,
+  speed: 0.005 + (i % 5) * 0.002,
+  amp: 10 + (i % 4) * 6,
+}));
 
 export function drawOverlays(cx: CanvasRenderingContext2D, state: GameState): void {
   // --- Start Screen ---
   if (!state.started) {
+    startScreenFrame++;
     overlayAlpha = Math.min(overlayAlpha + 0.03, 1);
     cx.globalAlpha = overlayAlpha;
     cx.fillStyle = COLORS.overlayBg;
     cx.fillRect(0, 0, W, H);
 
-    // Floating title with sine wave
-    const titleY = H / 2 - 60 + Math.sin(state.frame * 0.03) * 4;
+    // --- Layer 1: Floating honey drop particles (background) ---
+    for (const p of startParticles) {
+      const px = p.baseX + Math.sin(state.frame * p.speed + p.phase) * p.amp;
+      const py = p.baseY + Math.cos(state.frame * p.speed * 0.7 + p.phase) * p.amp;
+      cx.globalAlpha = overlayAlpha * (0.35 + 0.25 * Math.sin(state.frame * 0.02 + p.phase));
+      drawSmoothHoney(cx, px, py, state.frame, p.phase * 10);
+    }
+    cx.globalAlpha = overlayAlpha;
+
+    // --- Layer 2: Animated cow chase loop (background) ---
+    // Cow runs across chasing a scared enemy — purely decorative
+    const chasePeriod = 260;
+    const chaseT = (startScreenFrame % chasePeriod) / chasePeriod;
+    const cowCX = -60 + chaseT * (W + 120);
+    const chaseCY = H / 2 + 130;
+    const scared = getScaredSprite();
+    cx.globalAlpha = overlayAlpha * 0.7;
+    drawSprite(cx, scared.name, scared.sprite, cowCX - 60, chaseCY, 2);
+    drawSmoothCow(cx, cowCX, chaseCY, 1, 0, state.frame, 0);
+    cx.globalAlpha = overlayAlpha;
+
+    // --- Layer 3: Radial gold glow behind title (pulsing breath) ---
+    const glowPulse = 0.55 + Math.sin(state.frame * 0.04) * 0.15;
+    const glowGrad = cx.createRadialGradient(W / 2, H / 2 - 55, 10, W / 2, H / 2 - 55, 160);
+    glowGrad.addColorStop(0, `rgba(242, 203, 5, ${0.22 * glowPulse})`);
+    glowGrad.addColorStop(1, 'rgba(242, 203, 5, 0)');
+    cx.fillStyle = glowGrad;
+    cx.fillRect(0, H / 2 - 215, W, 320);
+
+    // --- Layer 4: Title — zoom-in + bounce entrance, then shimmer ---
+    // First 28 frames: scale from 0 → 1.25, then settle to 1.0 by frame 42.
+    // After that: continuous gentle float + shimmer.
+    const entry = Math.min(startScreenFrame / 28, 1);
+    const settle = Math.min(Math.max((startScreenFrame - 28) / 14, 0), 1);
+    const baseScale = entry * 1.25 - settle * 0.25;
+    const floatY = startScreenFrame > 42 ? Math.sin(state.frame * 0.03) * 3 : 0;
+    const titleCX = W / 2;
+    const titleCY = H / 2 - 55 + floatY;
+
+    cx.save();
+    cx.translate(titleCX, titleCY);
+    cx.scale(baseScale, baseScale);
+    cx.globalAlpha = overlayAlpha * entry;
     cx.fillStyle = COLORS.titleMain;
-    cx.font = 'bold 28px monospace';
+    cx.font = 'bold 32px monospace';
     cx.textAlign = 'center';
     cx.shadowColor = '#F2CB05';
-    cx.shadowBlur = 15 + Math.sin(state.frame * 0.05) * 5;
-    cx.fillText('ANVESHAN', W / 2, titleY);
+    cx.shadowBlur = 18 + Math.sin(state.frame * 0.05) * 6;
+    cx.fillText('ANVESHAN', 0, 0);
+    // Shimmer highlight sweeping across title
+    const shimmerX = ((state.frame * 3) % 260) - 130;
+    const shimmerGrad = cx.createLinearGradient(shimmerX - 40, 0, shimmerX + 40, 0);
+    shimmerGrad.addColorStop(0, 'rgba(255,255,255,0)');
+    shimmerGrad.addColorStop(0.5, 'rgba(255,255,255,0.55)');
+    shimmerGrad.addColorStop(1, 'rgba(255,255,255,0)');
+    cx.fillStyle = shimmerGrad;
     cx.shadowBlur = 0;
+    cx.fillText('ANVESHAN', 0, 0);
+    cx.restore();
 
+    // --- Subtitle: typewriter reveal ---
+    const subtitle = 'ONE STEP CLOSER TO PURITY';
+    const typeStart = 35;
+    const typed = Math.max(0, Math.min(subtitle.length, startScreenFrame - typeStart));
+    cx.globalAlpha = overlayAlpha;
     cx.fillStyle = COLORS.titleSub;
-    cx.font = '10px monospace';
-    cx.fillText('ONE STEP CLOSER TO PURITY', W / 2, titleY + 20);
+    cx.font = '11px monospace';
+    cx.textAlign = 'center';
+    cx.fillText(subtitle.slice(0, typed), W / 2, titleCY + 24);
 
+    // --- Body text (fades in after entrance) ---
+    const bodyAlpha = Math.max(0, Math.min(1, (startScreenFrame - 55) / 20));
+    cx.globalAlpha = overlayAlpha * bodyAlpha;
     cx.fillStyle = COLORS.honeyDrop;
     cx.font = '11px monospace';
     cx.fillText('Desi Cow vs Adulterated Food!', W / 2, H / 2 - 10);
     cx.font = '9px monospace';
-    cx.fillText('Collect honey drops & eat A2 Ghee', W / 2, H / 2 + 8);
+    cx.fillText('Collect honey pots & eat ghee', W / 2, H / 2 + 8);
     cx.fillText('to chase away junk food!', W / 2, H / 2 + 22);
 
-    // Blinking start prompt
+    // --- Start prompt with ripple ring ---
     const isTouch = 'ontouchstart' in window;
+    const promptY = H / 2 + 52;
+
+    // Expanding ripple ring (every ~1.5s)
+    const ripplePeriod = 90;
+    const rippleT = (startScreenFrame % ripplePeriod) / ripplePeriod;
+    const rippleR = 20 + rippleT * 80;
+    const rippleAlpha = (1 - rippleT) * 0.5;
+    cx.globalAlpha = overlayAlpha * rippleAlpha * bodyAlpha;
+    cx.strokeStyle = COLORS.titleMain;
+    cx.lineWidth = 2;
+    cx.beginPath();
+    cx.arc(W / 2, promptY - 4, rippleR, 0, Math.PI * 2);
+    cx.stroke();
+
+    // Blinking start prompt text
     const blink = Math.sin(state.frame * 0.08) * 0.5 + 0.5;
-    cx.globalAlpha = blink;
+    cx.globalAlpha = overlayAlpha * blink * bodyAlpha;
     cx.fillStyle = COLORS.textPrimary;
     cx.font = 'bold 13px monospace';
-    cx.fillText(isTouch ? 'TAP START OR D-PAD' : 'PRESS SPACE TO START', W / 2, H / 2 + 50);
-    cx.globalAlpha = overlayAlpha;
+    cx.fillText(isTouch ? 'TAP START OR D-PAD' : 'PRESS SPACE TO START', W / 2, promptY);
 
+    // Control hints
+    cx.globalAlpha = overlayAlpha * bodyAlpha;
     cx.fillStyle = COLORS.textMuted;
     cx.font = '9px monospace';
-    cx.fillText(isTouch ? 'SWIPE or D-PAD = Move' : 'ARROW KEYS / WASD = Move', W / 2, H / 2 + 78);
-    cx.fillText(isTouch ? 'TAP PAUSE = Pause' : 'SPACE = Pause', W / 2, H / 2 + 94);
+    cx.fillText(isTouch ? 'SWIPE or D-PAD = Move' : 'ARROW KEYS / WASD = Move', W / 2, H / 2 + 80);
+    cx.fillText(isTouch ? 'TAP PAUSE = Pause' : 'SPACE = Pause', W / 2, H / 2 + 96);
     cx.textAlign = 'left';
     cx.globalAlpha = 1;
   } else {
     overlayAlpha = 0;
+    startScreenFrame = 0;
   }
 
   // --- Game Over — HTML modal renders the real UI; just dim the canvas ---
