@@ -166,7 +166,27 @@ export function gameLoop(
   let lastDisplayedRounded = 0;
   let lastDisplayedHi = state.hi;
 
-  function loop(): void {
+  // ============================================================
+  // FIXED-TIMESTEP LOOP
+  // ============================================================
+  // Simulation runs at a locked 60Hz via an accumulator. Rendering
+  // runs every animation frame (60Hz on standard displays, 120Hz on
+  // ProMotion/high-refresh). This fixes two problems at once:
+  //   1. Game speed stays identical regardless of display refresh
+  //      rate. Previously 120Hz iPhones ran the game at 2× speed.
+  //   2. Rendering decouples from logic — high-refresh displays get
+  //      extra smoothness "for free" because the cow's smoothPX/PY
+  //      lerp (in renderer.ts) continues interpolating toward the
+  //      latest logical position on every frame, not every tick.
+  // The accumulator is capped at 250ms to avoid a "spiral of death"
+  // if the tab is backgrounded and then resumed (we drop missed ticks
+  // rather than trying to catch up on hundreds at once).
+  // ============================================================
+  const FIXED_DT = 1000 / 60; // ~16.667ms per simulation tick
+  let lastTime = 0;
+  let accumulator = 0;
+
+  function simulate(): void {
     state.frame++;
 
     // === GAME LOGIC ===
@@ -408,24 +428,6 @@ export function gameLoop(
       }
     }
 
-    // Smooth score counter — displayed number chases actual
-    displayedScore += (state.score - displayedScore) * 0.15;
-    const rounded = Math.round(displayedScore);
-    if (rounded !== lastDisplayedRounded) {
-      scE.textContent = String(rounded);
-      if (rounded > lastDisplayedRounded) {
-        scE.classList.remove('pulse');
-        void scE.offsetWidth; // force reflow to re-trigger animation
-        scE.classList.add('pulse');
-      }
-      lastDisplayedRounded = rounded;
-    }
-    const roundedHi = Math.max(state.hi, rounded);
-    if (roundedHi !== lastDisplayedHi) {
-      hiE.textContent = String(roundedHi);
-      lastDisplayedHi = roundedHi;
-    }
-
     // Death timer — when death animation ends, lose a life + respawn
     if (state.dead) {
       state.deadT--;
@@ -491,8 +493,30 @@ export function gameLoop(
     if (state.powerUp.effectTimer > 0) {
       state.powerUp.effectTimer--;
     }
+  }
 
-    // === RENDER ===
+  function render(): void {
+    // Smooth score counter — displayed number chases actual. This lives in
+    // render (not simulate) so the counter animates smoothly at the display
+    // refresh rate even when simulation is locked to 60Hz.
+    displayedScore += (state.score - displayedScore) * 0.15;
+    const rounded = Math.round(displayedScore);
+    if (rounded !== lastDisplayedRounded) {
+      scE.textContent = String(rounded);
+      if (rounded > lastDisplayedRounded) {
+        scE.classList.remove('pulse');
+        void scE.offsetWidth; // force reflow to re-trigger animation
+        scE.classList.add('pulse');
+      }
+      lastDisplayedRounded = rounded;
+    }
+    const roundedHi = Math.max(state.hi, rounded);
+    if (roundedHi !== lastDisplayedHi) {
+      hiE.textContent = String(roundedHi);
+      lastDisplayedHi = roundedHi;
+    }
+
+    // === CANVAS RENDER ===
     cx.save();
     applyShake(cx);
     cx.fillStyle = COLORS.bg;
@@ -529,9 +553,29 @@ export function gameLoop(
     drawOverlays(cx, state);
     cx.restore();
     resetShake(cx);
+  }
 
+  // Main animation frame handler — drives both simulation and rendering.
+  // `rafTime` is the high-resolution timestamp from requestAnimationFrame.
+  function loop(rafTime: number): void {
+    if (lastTime === 0) lastTime = rafTime;
+    let delta = rafTime - lastTime;
+    lastTime = rafTime;
+
+    // Clamp delta so long tab-background pauses don't cause a catch-up storm.
+    if (delta > 250) delta = 250;
+    accumulator += delta;
+
+    // Drain the accumulator in fixed steps — gives deterministic game speed
+    // regardless of whether we're running at 60Hz, 90Hz, 120Hz, or 144Hz.
+    while (accumulator >= FIXED_DT) {
+      simulate();
+      accumulator -= FIXED_DT;
+    }
+
+    render();
     requestAnimationFrame(loop);
   }
 
-  loop();
+  requestAnimationFrame(loop);
 }
