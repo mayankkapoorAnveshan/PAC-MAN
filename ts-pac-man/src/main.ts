@@ -449,7 +449,11 @@ buildDots();
 if (tutTotal) tutTotal.textContent = String(SLIDE_COUNT);
 updateCarouselUI(0);
 if (tutorial && !localStorage.getItem(TUTORIAL_SEEN_KEY)) {
+  // First-time visitor: show the guide. Game auto-starts when they close it.
   showTutorial();
+} else {
+  // Returning visitor: skip the start screen entirely — jump straight into play.
+  onStart();
 }
 
 // Wire close / skip / cta buttons (both click + touchstart for snappy mobile)

@@ -194,7 +194,11 @@ export function gameLoop(
       const col = Math.round(state.px);
       const row = Math.round(state.py);
 
-      if (Math.abs(state.px - col) < 0.04 && Math.abs(state.py - row) < 0.04) {
+      // Alignment tolerance scales with speed so faster levels still catch
+      // tile centers between frames. Needs to be at least spd/2 or the cow
+      // skips past tiles without ever registering dot-eat / wall-stop / turn.
+      const alignTol = Math.max(0.05, state.spd * 0.6);
+      if (Math.abs(state.px - col) < alignTol && Math.abs(state.py - row) < alignTol) {
         state.px = col;
         state.py = row;
         if (state.px < 0) state.px = COLS - 1;
