@@ -453,10 +453,19 @@ function wireBtn(btn: HTMLButtonElement | null, fn: () => void): void {
   btn.addEventListener('click', fn);
   btn.addEventListener('touchstart', (e) => { e.preventDefault(); fn(); }, { passive: false });
 }
+// Close the tutorial AND auto-start the game so the player doesn't
+// see the "TAP TO PLAY" screen after finishing the guide.
+// If the game is already running (tutorial re-opened via help button),
+// we just close it without restarting.
+function hideTutorialAndStart(): void {
+  hideTutorial();
+  if (!state.started) onStart();
+}
+
 wireBtn(helpBtn, showTutorial);
-wireBtn(tutClose, hideTutorial);
-wireBtn(tutSkip, hideTutorial);
-wireBtn(tutCta, hideTutorial);
+wireBtn(tutClose, hideTutorialAndStart);
+wireBtn(tutSkip, hideTutorialAndStart);
+wireBtn(tutCta, hideTutorialAndStart);
 
 drawLives(state, livE);
 gameLoop(cx, state, scE, hiE, lvE, livE);
