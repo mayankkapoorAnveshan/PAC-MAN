@@ -1,7 +1,7 @@
 import { GameState } from './types';
-import { COLS, ROWS, T, W, H, COLORS, getMapForLevel } from './constants';
+import { COLS, ROWS, T, W, H, COLORS, getMapForLevel, LEVEL_OBJECTIVES, MAX_LEVEL } from './constants';
 import { createGhosts, moveGhost } from './ghost';
-import { drawMap, drawPacMan, drawDeadPacMan, drawGhost, drawFruit, drawPowerUp, drawPowerUpIndicator, drawOverlays, drawLivesEmoji, resetSmoothPos } from './renderer';
+import { drawMap, drawPacMan, drawDeadPacMan, drawGhost, drawFruit, drawPowerUp, drawPowerUpIndicator, drawOverlays, drawLivesEmoji, resetSmoothPos, drawObjectiveProgress } from './renderer';
 import { playEatDot, playEatGhee, playEatGhost, playDeath, playLevelComplete, playFruitEat } from './sound';
 import { triggerShake, applyShake, resetShake, spawnDotParticles, spawnGhostExplosion, spawnPowerUpBurst, spawnScorePopup, spawnDeathExplosion, updateAndDrawParticles, updateAndDrawPopups } from './effects';
 import { addScore } from './leaderboard';
@@ -16,12 +16,25 @@ function initMap(state: GameState): void {
   state.totalDots = 0;
   state.dotsEaten = 0;
   const template = getMapForLevel(state.level);
+  const potPositions: { r: number; c: number }[] = [];
   for (let r = 0; r < ROWS; r++) {
     state.map[r] = [];
     for (let c = 0; c < COLS; c++) {
       state.map[r][c] = template[r][c];
-      if (state.map[r][c] === 2 || state.map[r][c] === 3) state.totalDots++;
+      if (state.map[r][c] === 2) state.totalDots++;
+      if (state.map[r][c] === 3) potPositions.push({ r, c });
     }
+  }
+
+  // Trim honey pots (power pellets) down to honeyTarget for this level.
+  const target = state.honeyTarget;
+  for (let i = potPositions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [potPositions[i], potPositions[j]] = [potPositions[j], potPositions[i]];
+  }
+  for (let i = target; i < potPositions.length; i++) {
+    const { r, c } = potPositions[i];
+    state.map[r][c] = 0;
   }
 }
 
@@ -42,7 +55,17 @@ function resetPositions(state: GameState): void {
   resetSmoothPos();
 }
 
+function applyLevelObjectives(state: GameState): void {
+  const idx = Math.min(state.level - 1, MAX_LEVEL - 1);
+  const obj = LEVEL_OBJECTIVES[idx];
+  state.honeyTarget = obj.honey;
+  state.killsTarget = obj.kills;
+  state.ghostKills = 0;
+  state.honeyPotsEaten = 0;
+}
+
 function newLevel(state: GameState, lvE: HTMLElement): void {
+  applyLevelObjectives(state);
   initMap(state);
   resetPositions(state);
   lvE.textContent = String(state.level);
@@ -74,6 +97,11 @@ export function createInitialState(): GameState {
     powerUp: { type: '', x: 0, y: 0, active: false, timer: 0, effectTimer: 0 },
     cutscene: false, cutsceneT: 0,
     ghosts: [],
+    honeyTarget: LEVEL_OBJECTIVES[0].honey,
+    killsTarget: LEVEL_OBJECTIVES[0].kills,
+    ghostKills: 0,
+    honeyPotsEaten: 0,
+    gameComplete: false,
   };
 }
 
@@ -81,6 +109,7 @@ export function doStart(state: GameState, lvE: HTMLElement, livE: HTMLElement): 
   if (state.started) return;
   state.started = true;
   state.gameover = false;
+  state.gameComplete = false;
   state.score = 0;
   state.lives = 3;
   state.level = 1;
@@ -92,6 +121,7 @@ export function doStart(state: GameState, lvE: HTMLElement, livE: HTMLElement): 
 
 export function doRestart(state: GameState, lvE: HTMLElement, livE: HTMLElement): void {
   state.gameover = false;
+  state.gameComplete = false;
   state.goT = 0;
   state.score = 0;
   state.lives = 3;
@@ -192,7 +222,7 @@ export function gameLoop(
         } else if (state.map[row]?.[col] === 3) {
           state.map[row][col] = 0;
           state.score += 50;
-          state.dotsEaten++;
+          state.honeyPotsEaten++;
           playEatGhee();
           spawnPowerUpBurst(col, row);
           state.eatCombo = 0;
@@ -242,7 +272,7 @@ export function gameLoop(
           spawnScorePopup(state.fruit.x, state.fruit.y, state.fruit.points);
         }
 
-        if (state.dotsEaten >= state.totalDots) {
+        if (state.honeyPotsEaten >= state.honeyTarget && state.ghostKills >= state.killsTarget) {
           state.won = true;
           state.wonT = 80;
           playLevelComplete();
@@ -273,6 +303,7 @@ export function gameLoop(
             g.eaten = true;
             g.fr = false;
             state.eatCombo++;
+            state.ghostKills++;
             const ghostScore = 200 * Math.pow(2, state.eatCombo - 1);
             state.score += ghostScore;
             playEatGhost();
@@ -345,8 +376,15 @@ export function gameLoop(
       state.cutsceneT--;
       if (state.cutsceneT <= 0) {
         state.cutscene = false;
-        state.level++;
-        newLevel(state, lvE);
+        if (state.level >= MAX_LEVEL) {
+          state.gameComplete = true;
+          state.gameover = true;
+          state.goT = 80;
+          addScore(state.score, state.level);
+        } else {
+          state.level++;
+          newLevel(state, lvE);
+        }
       }
     }
 
@@ -399,6 +437,7 @@ export function gameLoop(
     updateAndDrawParticles(cx);
     updateAndDrawPopups(cx);
     drawPowerUpIndicator(cx, state);
+    drawObjectiveProgress(cx, state);
 
     drawOverlays(cx, state);
     cx.restore();

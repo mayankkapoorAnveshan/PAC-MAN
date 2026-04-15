@@ -1,5 +1,5 @@
 import { Ghost, GameState } from './types';
-import { T, COLS, ROWS, W, H, COLORS } from './constants';
+import { T, COLS, ROWS, W, H, COLORS, MAX_LEVEL } from './constants';
 import {
   initSprites, drawSprite,
   getEnemySprite, getScaredSprite, getEyesSprite,
@@ -330,7 +330,7 @@ function drawCowBody(cx: CanvasRenderingContext2D, frame: number): void {
 
 
 // ============================================================
-// ANVESHAN RAW HONEY DROP - Pre-rendered cache for performance
+// GRASS TUFT - Pre-rendered cache for performance
 // Renders once to offscreen canvas, reuses with drawImage (fast)
 // ============================================================
 
@@ -344,36 +344,40 @@ function buildHoneyCache(): HTMLCanvasElement {
   const ctx = c.getContext('2d')!;
   ctx.translate(size / 2, size / 2);
 
-  // Glow (shadowBlur drawn once, cached forever)
-  ctx.shadowColor = 'rgba(242, 169, 0, 0.8)';
-  ctx.shadowBlur = 5;
+  // Soft green glow
+  ctx.shadowColor = 'rgba(80, 220, 100, 0.55)';
+  ctx.shadowBlur = 4;
 
-  // Amber teardrop gradient
-  const grad = ctx.createRadialGradient(-1.5, -2, 0.5, 0, 0, 5);
-  grad.addColorStop(0, '#FFDB70');
-  grad.addColorStop(0.4, '#F2A900');
-  grad.addColorStop(1, '#A06F00');
-  ctx.fillStyle = grad;
+  // Three grass blades — dark stem with bright tips
+  ctx.strokeStyle = '#228B22';
+  ctx.lineWidth = 1.6;
+  ctx.lineCap = 'round';
+
+  // Left blade
   ctx.beginPath();
-  ctx.ellipse(0, 0, 4, 4.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Dark outline
-  ctx.shadowBlur = 0;
-  ctx.strokeStyle = '#5C3A00';
-  ctx.lineWidth = 1;
+  ctx.moveTo(-2.5, 3);
+  ctx.quadraticCurveTo(-3.2, 0, -2.8, -3);
   ctx.stroke();
 
-  // White shine (upper-left)
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+  // Center blade (tallest)
   ctx.beginPath();
-  ctx.ellipse(-1.3, -1.8, 1, 1.5, -0.3, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.moveTo(0, 3.5);
+  ctx.quadraticCurveTo(0.3, -0.5, -0.2, -4);
+  ctx.stroke();
 
-  // Tiny secondary shine
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+  // Right blade
   ctx.beginPath();
-  ctx.arc(1.5, 0.5, 0.4, 0, Math.PI * 2);
+  ctx.moveTo(2.5, 3);
+  ctx.quadraticCurveTo(3.2, 0, 2.8, -3);
+  ctx.stroke();
+
+  // Bright tips (no glow, crisp)
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#7FE87F';
+  ctx.beginPath();
+  ctx.arc(-2.8, -3, 0.9, 0, Math.PI * 2);
+  ctx.arc(-0.2, -4, 1, 0, Math.PI * 2);
+  ctx.arc(2.8, -3, 0.9, 0, Math.PI * 2);
   ctx.fill();
 
   return c;
@@ -801,6 +805,40 @@ export function drawFruit(cx: CanvasRenderingContext2D, state: GameState): void 
 
 
 // ============================================================
+// OBJECTIVE PROGRESS - Mission HUD drawn in empty space below maze
+// Shows honey collected + enemies killed progress
+// ============================================================
+
+export function drawObjectiveProgress(cx: CanvasRenderingContext2D, state: GameState): void {
+  if (!state.started || state.gameover) return;
+  const honey = Math.min(state.honeyPotsEaten, state.honeyTarget);
+  const kills = Math.min(state.ghostKills, state.killsTarget);
+  const honeyDone = honey >= state.honeyTarget;
+  const killsDone = kills >= state.killsTarget;
+
+  const y = 21 * T + 18;
+  cx.save();
+  cx.font = 'bold 14px monospace';
+  cx.textAlign = 'center';
+  cx.shadowColor = '#000';
+  cx.shadowBlur = 4;
+
+  cx.fillStyle = honeyDone ? '#7FE87F' : COLORS.honeyDrop;
+  cx.fillText(`HONEY ${honey}/${state.honeyTarget}`, W / 2 - 90, y);
+
+  cx.fillStyle = killsDone ? '#7FE87F' : COLORS.textPrimary;
+  cx.fillText(`ENEMIES ${kills}/${state.killsTarget}`, W / 2 + 90, y);
+
+  cx.fillStyle = COLORS.titleSub;
+  cx.font = 'bold 11px monospace';
+  cx.fillText(`LEVEL ${state.level} / ${MAX_LEVEL}`, W / 2, y);
+
+  cx.restore();
+  cx.textAlign = 'left';
+}
+
+
+// ============================================================
 // OVERLAYS - Start screen, Game Over, Pause
 // ============================================================
 
@@ -861,29 +899,49 @@ export function drawOverlays(cx: CanvasRenderingContext2D, state: GameState): vo
     cx.fillStyle = COLORS.overlayBg;
     cx.fillRect(0, 0, W, H);
 
-    // Shaking GAME OVER text
-    const shk = Math.sin(state.frame * 0.2) * 2;
-    cx.fillStyle = COLORS.gameoverText;
-    cx.font = 'bold 26px monospace';
-    cx.textAlign = 'center';
-    cx.shadowColor = '#e74c3c';
-    cx.shadowBlur = 10;
-    cx.fillText('GAME OVER', W / 2 + shk, H / 2 - 30);
-    cx.shadowBlur = 0;
+    if (state.gameComplete) {
+      // Victory banner — pulsing gold
+      const pulse = 10 + Math.sin(state.frame * 0.08) * 6;
+      cx.fillStyle = COLORS.titleMain;
+      cx.font = 'bold 26px monospace';
+      cx.textAlign = 'center';
+      cx.shadowColor = '#F2CB05';
+      cx.shadowBlur = pulse;
+      cx.fillText('VICTORY!', W / 2, H / 2 - 40);
+      cx.shadowBlur = 0;
 
-    cx.fillStyle = COLORS.honeyDrop;
-    cx.font = '11px monospace';
-    cx.fillText('Junk food won this time...', W / 2, H / 2 + 0);
+      cx.fillStyle = COLORS.titleSub;
+      cx.font = 'bold 12px monospace';
+      cx.fillText('ALL 3 LEVELS CLEARED', W / 2, H / 2 - 14);
 
-    cx.fillStyle = '#FFF';
-    cx.font = '10px monospace';
-    cx.fillText('Score: ' + state.score, W / 2, H / 2 + 22);
+      cx.fillStyle = '#FFF';
+      cx.font = '10px monospace';
+      cx.fillText('Score: ' + state.score, W / 2, H / 2 + 8);
+    } else {
+      // Shaking GAME OVER text
+      const shk = Math.sin(state.frame * 0.2) * 2;
+      cx.fillStyle = COLORS.gameoverText;
+      cx.font = 'bold 26px monospace';
+      cx.textAlign = 'center';
+      cx.shadowColor = '#e74c3c';
+      cx.shadowBlur = 10;
+      cx.fillText('GAME OVER', W / 2 + shk, H / 2 - 30);
+      cx.shadowBlur = 0;
+
+      cx.fillStyle = COLORS.honeyDrop;
+      cx.font = '11px monospace';
+      cx.fillText('Junk food won this time...', W / 2, H / 2 + 0);
+
+      cx.fillStyle = '#FFF';
+      cx.font = '10px monospace';
+      cx.fillText('Score: ' + state.score, W / 2, H / 2 + 22);
+    }
 
     const blink = Math.sin(state.frame * 0.08) * 0.5 + 0.5;
     cx.globalAlpha = blink;
     cx.fillStyle = COLORS.textPrimary;
     cx.font = 'bold 12px monospace';
-    cx.fillText('PRESS ANY KEY TO TRY AGAIN', W / 2, H / 2 + 48);
+    cx.fillText(state.gameComplete ? 'PRESS ANY KEY TO PLAY AGAIN' : 'PRESS ANY KEY TO TRY AGAIN', W / 2, H / 2 + 48);
     cx.globalAlpha = goAlpha;
     drawLeaderboard(cx, W, H);
     cx.textAlign = 'left';
@@ -909,17 +967,18 @@ export function drawOverlays(cx: CanvasRenderingContext2D, state: GameState): vo
     drawSmoothCow(cx, cowX, cy, 1, 0, state.frame, 0);
 
     // Level text
+    const isFinal = state.level >= MAX_LEVEL;
     cx.fillStyle = COLORS.titleMain;
     cx.font = 'bold 20px monospace';
     cx.textAlign = 'center';
     cx.shadowColor = '#F2CB05';
     cx.shadowBlur = 10;
-    cx.fillText(`LEVEL ${state.level + 1}`, W / 2, H / 2 - 40);
+    cx.fillText(isFinal ? 'MISSION COMPLETE' : `LEVEL ${state.level + 1}`, W / 2, H / 2 - 40);
     cx.shadowBlur = 0;
 
     cx.fillStyle = COLORS.titleSub;
     cx.font = '11px monospace';
-    cx.fillText('Get ready!', W / 2, H / 2 - 20);
+    cx.fillText(isFinal ? 'You saved the maze!' : 'Get ready!', W / 2, H / 2 - 20);
     cx.textAlign = 'left';
   }
 

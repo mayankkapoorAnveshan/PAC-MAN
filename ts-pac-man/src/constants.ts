@@ -16,6 +16,14 @@ export const H = ROWS * T;
 //   Soda (red), Chips Packet (orange), Candy (pink), Pesticide (purple)
 export const GHOST_COLORS = ['#E63946', '#F77F00', '#FF69B4', '#9B59B6'];
 
+// Per-level mission targets: grass to collect + enemies to kill
+export const LEVEL_OBJECTIVES: readonly { honey: number; kills: number }[] = [
+  { honey: 4, kills: 4 }, // Level 1
+  { honey: 3, kills: 4 }, // Level 2
+  { honey: 2, kills: 4 }, // Level 3
+];
+export const MAX_LEVEL = LEVEL_OBJECTIVES.length;
+
 // Anveshan brand palette
 export const COLORS = {
   // Background & walls

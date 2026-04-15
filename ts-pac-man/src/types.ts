@@ -68,4 +68,11 @@ export interface GameState {
 
   // Ghosts
   ghosts: Ghost[];
+
+  // Mission targets (per-level)
+  honeyTarget: number;
+  killsTarget: number;
+  ghostKills: number;
+  honeyPotsEaten: number;
+  gameComplete: boolean;
 }
