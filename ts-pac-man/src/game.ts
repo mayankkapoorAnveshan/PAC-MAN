@@ -7,7 +7,11 @@ import { triggerShake, applyShake, resetShake, spawnDotParticles, spawnGhostExpl
 import { addScore } from './leaderboard';
 
 function isWall(map: number[][], x: number, y: number): boolean {
-  if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return false;
+  // Vertical out-of-bounds is a hard wall (no top/bottom tunnels).
+  // Horizontal out-of-bounds stays passable so the side-tunnel wrap
+  // on row 9 still works as expected.
+  if (y < 0 || y >= ROWS) return true;
+  if (x < 0 || x >= COLS) return false;
   return map[y][x] === 1;
 }
 
@@ -122,16 +126,12 @@ export function doStart(state: GameState, lvE: HTMLElement, livE: HTMLElement): 
 }
 
 export function doRestart(state: GameState, lvE: HTMLElement, livE: HTMLElement): void {
-  // On victory restart: go back to level 1 fresh.
-  // On failure retry: stay on the same level so the player retries
-  // the exact level they died on instead of grinding from level 1.
-  const retryLevel = state.gameComplete ? 1 : state.level;
   state.gameover = false;
   state.gameComplete = false;
   state.goT = 0;
   state.score = 0;
   state.lives = 1;
-  state.level = retryLevel;
+  state.level = 1;
   drawLives(state, livE);
   newLevel(state, lvE);
 }
