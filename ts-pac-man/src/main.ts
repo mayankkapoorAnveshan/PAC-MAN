@@ -20,10 +20,12 @@ try { history.pushState({ pacBack: true }, '', location.href); } catch { /* priv
 window.addEventListener('popstate', () => {
   try { history.pushState({ pacBack: true }, '', location.href); } catch { /* ignore */ }
 });
+// Narrow 5px trap zone matches iOS Safari's back-gesture trigger area
+// but leaves gameplay swipes that start near (but not on) the edge alone.
 window.addEventListener('touchstart', (e: TouchEvent) => {
   if (!e.touches[0]) return;
   const x = e.touches[0].clientX;
-  const edge = 12;
+  const edge = 5;
   if (x < edge || x > window.innerWidth - edge) {
     e.preventDefault();
   }
@@ -168,8 +170,20 @@ function hideEndModal(): void {
   endModal?.classList.remove('show');
 }
 
-endRetry?.addEventListener('click', () => { hideEndModal(); onRestart(); });
-endRetry?.addEventListener('touchstart', (e) => { e.preventDefault(); hideEndModal(); onRestart(); }, { passive: false });
+// Guard flag prevents rapid double-tap on retry from firing restart twice
+// during the same frame before the game state has actually flipped over.
+let retryInFlight = false;
+function doModalRetry(): void {
+  if (retryInFlight) return;
+  retryInFlight = true;
+  hideEndModal();
+  prevGameOver = true; // keep suppressed until watchGameOver clears it
+  onRestart();
+  setTimeout(() => { retryInFlight = false; }, 400);
+}
+
+endRetry?.addEventListener('click', doModalRetry);
+endRetry?.addEventListener('touchstart', (e) => { e.preventDefault(); doModalRetry(); }, { passive: false });
 endCloseBtn?.addEventListener('click', hideEndModal);
 
 // Show start button again on game over (for mobile) + refresh leaderboard + popup

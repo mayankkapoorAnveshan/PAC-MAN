@@ -27,6 +27,8 @@ function initMap(state: GameState): void {
   }
 
   // Trim honey pots (power pellets) down to honeyTarget for this level.
+  // Clamp target to what the map actually offers so the level stays winnable.
+  if (state.honeyTarget > potPositions.length) state.honeyTarget = potPositions.length;
   const target = state.honeyTarget;
   for (let i = potPositions.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -82,7 +84,7 @@ export function createInitialState(): GameState {
     spd: 0.1,
     score: 0,
     hi: parseInt(localStorage.getItem('pac_hi') || '0'),
-    lives: 3,
+    lives: 1,
     level: 1,
     frame: 0,
     started: false,
@@ -111,7 +113,7 @@ export function doStart(state: GameState, lvE: HTMLElement, livE: HTMLElement): 
   state.gameover = false;
   state.gameComplete = false;
   state.score = 0;
-  state.lives = 3;
+  state.lives = 1;
   state.level = 1;
   drawLives(state, livE);
   newLevel(state, lvE);
@@ -120,12 +122,16 @@ export function doStart(state: GameState, lvE: HTMLElement, livE: HTMLElement): 
 }
 
 export function doRestart(state: GameState, lvE: HTMLElement, livE: HTMLElement): void {
+  // On victory restart: go back to level 1 fresh.
+  // On failure retry: stay on the same level so the player retries
+  // the exact level they died on instead of grinding from level 1.
+  const retryLevel = state.gameComplete ? 1 : state.level;
   state.gameover = false;
   state.gameComplete = false;
   state.goT = 0;
   state.score = 0;
-  state.lives = 3;
-  state.level = 1;
+  state.lives = 1;
+  state.level = retryLevel;
   drawLives(state, livE);
   newLevel(state, lvE);
 }
@@ -272,11 +278,14 @@ export function gameLoop(
           spawnScorePopup(state.fruit.x, state.fruit.y, state.fruit.points);
         }
 
-        if (state.honeyPotsEaten >= state.honeyTarget && state.ghostKills >= state.killsTarget) {
-          state.won = true;
-          state.wonT = 80;
-          playLevelComplete();
-        }
+      }
+
+      // Mission win check — lives outside the tile-aligned block so
+      // speed boosts can't overshoot and miss the final trigger frame.
+      if (!state.won && state.honeyPotsEaten >= state.honeyTarget && state.ghostKills >= state.killsTarget) {
+        state.won = true;
+        state.wonT = 80;
+        playLevelComplete();
       }
 
       if (state.dx !== 0 || state.dy !== 0) {
@@ -310,13 +319,15 @@ export function gameLoop(
             spawnGhostExplosion(g.x, g.y, g.color);
             spawnScorePopup(g.x, g.y, ghostScore);
           } else if (!g.eaten) {
-            state.dead = true;
-            state.deadT = 50;
-            state.lives = 1;
+            // Mission mode: one collision = instant game over (no lives)
             playDeath();
             triggerShake(30, 8);
-            // Big explosion at cow position
             spawnDeathExplosion(state.px * T + T / 2, state.py * T + T / 2);
+            state.lives = 0;
+            drawLives(state, livE);
+            state.gameover = true;
+            state.goT = 0;
+            addScore(state.score, state.level);
           }
         }
       }
