@@ -126,12 +126,16 @@ export function doStart(state: GameState, lvE: HTMLElement, livE: HTMLElement): 
 }
 
 export function doRestart(state: GameState, lvE: HTMLElement, livE: HTMLElement): void {
+  // On victory restart: go back to level 1 fresh.
+  // On failure retry: stay on the same level so the player retries
+  // the exact level they died on instead of grinding from level 1.
+  const retryLevel = state.gameComplete ? 1 : state.level;
   state.gameover = false;
   state.gameComplete = false;
   state.goT = 0;
   state.score = 0;
   state.lives = 1;
-  state.level = 1;
+  state.level = retryLevel;
   drawLives(state, livE);
   newLevel(state, lvE);
 }
