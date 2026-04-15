@@ -255,7 +255,6 @@ const tutCurrent = document.getElementById('tutCurrent') as HTMLElement | null;
 const tutTotal = document.getElementById('tutTotal') as HTMLElement | null;
 const tutProgress = document.getElementById('tutProgress') as HTMLElement | null;
 const tutProgressFill = document.getElementById('tutProgressFill') as HTMLElement | null;
-const TUTORIAL_SEEN_KEY = 'anveshan_tutorial_seen';
 
 // Auto-play config: each slide shows for this long before advancing
 const AUTOPLAY_DURATION_MS = 4500;
@@ -441,7 +440,10 @@ function showTutorial(): void {
   }
 }
 
-// Close the tutorial overlay and mark as seen
+// Close the tutorial overlay.
+// NOTE: we intentionally do NOT persist a "seen" flag — the tutorial is
+// shown fresh on every visit so returning players always see the guide
+// and can't miss instructions after a cache clear or a long break.
 function hideTutorial(): void {
   if (!tutorial) return;
   // Stop any running auto-play timer so it doesn't fire after close
@@ -450,20 +452,15 @@ function hideTutorial(): void {
   setTimeout(() => {
     tutorial.classList.remove('show', 'hide');
   }, 320);
-  localStorage.setItem(TUTORIAL_SEEN_KEY, '1');
 }
 
-// Initialize — build dots + counter total + show on first visit
+// Initialize — build dots + counter total + always show tutorial on load
 buildDots();
 if (tutTotal) tutTotal.textContent = String(SLIDE_COUNT);
 updateCarouselUI(0);
-if (tutorial && !localStorage.getItem(TUTORIAL_SEEN_KEY)) {
-  // First-time visitor: show the guide. Game auto-starts when they close it.
-  showTutorial();
-} else {
-  // Returning visitor: skip the start screen entirely — jump straight into play.
-  onStart();
-}
+// Tutorial always opens on every page load (no persisted seen flag).
+// Closing it will auto-start the game via hideTutorialAndStart.
+if (tutorial) showTutorial();
 
 // Wire close / skip / cta buttons (both click + touchstart for snappy mobile)
 function wireBtn(btn: HTMLButtonElement | null, fn: () => void): void {
