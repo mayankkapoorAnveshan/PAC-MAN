@@ -49,18 +49,10 @@ export function setupInput(
 
   // Touch origin (finger down position) — swipes are measured from here
   let ttx = 0, tty = 0;
-  // When the touch started — used to distinguish tap (quick) vs swipe (long)
-  let touchStartTime = 0;
-  // Timestamp of last tap — used to detect double-tap (second tap within window)
-  let lastTapTime = 0;
   // Last applied direction — used to avoid re-vibrating on same direction
   let lastDx = 0, lastDy = 0;
 
-  // Tunable constants
-  const SWIPE_THRESHOLD = 18;  // px finger must move before swipe registers (balance: sensitive vs accidental)
-  const DOUBLE_TAP_MS = 300;   // max time between two taps to count as double-tap
-  const TAP_MAX_DIST = 10;     // if finger moves less than this during touch, it's a tap (not swipe)
-  const TAP_MAX_TIME = 250;    // touch shorter than this = tap (longer = swipe/hold)
+  const SWIPE_THRESHOLD = 18;  // px finger must move before swipe registers
 
   // Fire a short vibration if the device supports it (phones do, desktops don't)
   // Wrapped in try/catch because some browsers throw if vibration policy blocks it
@@ -122,10 +114,9 @@ export function setupInput(
     // If game not started → first touch starts the game
     if (!state.started) { doStart(); return; }
 
-    // Record where the finger came down + when
+    // Record where the finger came down
     ttx = e.touches[0].clientX;
     tty = e.touches[0].clientY;
-    touchStartTime = Date.now();
   }, { passive: false });
 
   // --- touchmove: live swipe detection ---
@@ -153,7 +144,9 @@ export function setupInput(
     tty = e.touches[0].clientY;
   }, { passive: false });
 
-  // --- touchend: handle taps (double-tap pause) + final swipe catch ---
+  // --- touchend: final swipe catch for slow slides ---
+  // Double-tap-to-pause was removed — pause is available only via the
+  // explicit PAUSE button in the HUD now.
   window.addEventListener('touchend', (e: TouchEvent) => {
     if (!isGameTarget(e.target)) return;
     if (!state.started) return;
@@ -161,32 +154,9 @@ export function setupInput(
     const t = e.changedTouches[0];
     const ddx = t.clientX - ttx;
     const ddy = t.clientY - tty;
-    const dist = Math.hypot(ddx, ddy);
-    const duration = Date.now() - touchStartTime;
 
-    // --- Tap detection (quick touch with almost no movement) ---
-    // Ye double-tap shortcut ke liye hai — 300ms ke andar do taps = pause/resume
-    if (dist < TAP_MAX_DIST && duration < TAP_MAX_TIME) {
-      const now = Date.now();
-      if (now - lastTapTime < DOUBLE_TAP_MS) {
-        // Double-tap confirmed — toggle pause (only during active gameplay)
-        if (!state.dead && !state.won && !state.gameover) {
-          state.paused = !state.paused;
-          pauseBtn.textContent = state.paused ? 'RESUME' : 'PAUSE';
-          vibrate(18);  // stronger buzz so player knows the toggle worked
-        }
-        lastTapTime = 0;  // reset — prevents triple-tap from re-pausing
-      } else {
-        // First tap — remember timestamp, wait for a possible second tap
-        lastTapTime = now;
-      }
-      return;
-    }
-
-    // --- Final swipe catch ---
-    // Agar player ne finger slowly slide kiya aur threshold cross nahi hua
-    // touchmove mein, but end position threshold cross kar rahi hai,
-    // toh yahaan bhi direction apply kar do (edge case handling)
+    // If finger slid gently under the move threshold during touchmove
+    // but the end delta now crosses it, register it here as a final swipe.
     if (Math.abs(ddx) < SWIPE_THRESHOLD && Math.abs(ddy) < SWIPE_THRESHOLD) return;
     applySwipeDirection(ddx, ddy);
   }, { passive: false });
