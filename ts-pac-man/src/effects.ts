@@ -30,6 +30,36 @@ export function resetShake(cx: CanvasRenderingContext2D): void {
 }
 
 // ============================================================
+// SCREEN FLASH - full-canvas color pulse for juice (eat ghost, pot, etc)
+// ============================================================
+
+let flashColor: string = '#ffffff';
+let flashAlpha: number = 0;
+const FLASH_DECAY = 0.08;
+
+export function triggerFlash(color: string, intensity: number = 0.35): void {
+  flashColor = color;
+  flashAlpha = Math.max(flashAlpha, intensity);
+}
+
+export function drawScreenFlash(cx: CanvasRenderingContext2D, w: number, h: number): void {
+  if (flashAlpha <= 0) return;
+  cx.save();
+  cx.globalAlpha = flashAlpha;
+  cx.fillStyle = flashColor;
+  cx.fillRect(0, 0, w, h);
+  cx.restore();
+  flashAlpha = Math.max(0, flashAlpha - FLASH_DECAY);
+}
+
+// Helper: safe haptic vibration with feature detection
+export function haptic(ms: number): void {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try { navigator.vibrate(ms); } catch { /* blocked */ }
+  }
+}
+
+// ============================================================
 // PARTICLES
 // ============================================================
 

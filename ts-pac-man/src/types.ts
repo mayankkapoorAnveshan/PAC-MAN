@@ -75,4 +75,10 @@ export interface GameState {
   ghostKills: number;
   honeyPotsEaten: number;
   gameComplete: boolean;
+
+  // Post-L3 endless mode: levels keep incrementing, victory never triggers
+  endlessMode: boolean;
+
+  // Brief invulnerability after respawn so ghosts don't insta-kill
+  invulnTimer: number;
 }

@@ -143,13 +143,18 @@ const endCloseBtn = document.getElementById('endClose') as HTMLButtonElement | n
 
 function showEndModal(): void {
   if (!endModal) return;
-  const victory = state.gameComplete;
+  const endless = state.endlessMode;
+  const victory = state.gameComplete || endless;
   if (endCard) endCard.classList.toggle('loss', !victory);
   if (endIcon) endIcon.textContent = victory ? '\u{1F3C6}' : '\u{1F494}';
-  if (endTitle) endTitle.textContent = victory ? 'VICTORY!' : 'GAME OVER';
-  if (endSubtitle) endSubtitle.textContent = victory ? 'All 3 levels cleared' : 'Junk food won this round...';
+  if (endTitle) endTitle.textContent = endless ? 'ENDLESS RUN' : (victory ? 'VICTORY!' : 'GAME OVER');
+  if (endSubtitle) {
+    if (endless) endSubtitle.textContent = `You reached level ${state.level}`;
+    else if (victory) endSubtitle.textContent = 'All 3 levels cleared';
+    else endSubtitle.textContent = 'Junk food won this round...';
+  }
   if (endScore) endScore.textContent = String(state.score);
-  if (endLevel) endLevel.textContent = `${state.level}/3`;
+  if (endLevel) endLevel.textContent = endless ? `${state.level}` : `${state.level}/3`;
   if (endBest) endBest.textContent = String(state.hi);
 
   if (endBoard) {

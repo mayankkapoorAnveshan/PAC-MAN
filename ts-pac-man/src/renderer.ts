@@ -68,7 +68,7 @@ export function drawMap(cx: CanvasRenderingContext2D, state: GameState): void {
 
 // Smooth position tracking for visual interpolation
 let smoothPX = 10, smoothPY = 15;
-const LERP = 0.35;
+const LERP = 0.55; // Snappier follow — less visual lag behind real position
 
 export function drawPacMan(cx: CanvasRenderingContext2D, state: GameState): void {
   // Lerp toward actual position for smooth rendering
@@ -82,6 +82,11 @@ export function drawPacMan(cx: CanvasRenderingContext2D, state: GameState): void
   // Spawn dust trail behind cow every 4 frames while moving
   if (moving && state.frame % 4 === 0) {
     spawnCowTrail(ppx, ppy, state.dx, state.dy);
+  }
+
+  // Invulnerability blink — skip render every other few frames
+  if (state.invulnTimer > 0 && Math.floor(state.frame / 4) % 2 === 0) {
+    return;
   }
 
   drawSmoothCow(cx, ppx, ppy, state.dx, state.dy, state.frame, 0);
@@ -828,9 +833,12 @@ export function drawObjectiveProgress(cx: CanvasRenderingContext2D, state: GameS
   cx.fillStyle = killsDone ? '#7FE87F' : COLORS.textPrimary;
   cx.fillText(`ENEMIES ${kills}/${state.killsTarget}`, W / 2 + 90, y);
 
-  cx.fillStyle = COLORS.titleSub;
+  cx.fillStyle = state.endlessMode ? '#F2CB05' : COLORS.titleSub;
   cx.font = 'bold 11px monospace';
-  cx.fillText(`LEVEL ${state.level} / ${MAX_LEVEL}`, W / 2, y);
+  const levelLabel = state.endlessMode
+    ? `ENDLESS ${state.level}`
+    : `LEVEL ${state.level} / ${MAX_LEVEL}`;
+  cx.fillText(levelLabel, W / 2, y);
 
   cx.restore();
   cx.textAlign = 'left';
@@ -1003,19 +1011,22 @@ export function drawOverlays(cx: CanvasRenderingContext2D, state: GameState): vo
     // Draw smooth cow chasing
     drawSmoothCow(cx, cowX, cy, 1, 0, state.frame, 0);
 
-    // Level text
-    const isFinal = state.level >= MAX_LEVEL;
+    // Level text — special banner when transitioning into endless mode
+    const unlockingEndless = state.level === MAX_LEVEL && !state.endlessMode;
     cx.fillStyle = COLORS.titleMain;
     cx.font = 'bold 20px monospace';
     cx.textAlign = 'center';
     cx.shadowColor = '#F2CB05';
     cx.shadowBlur = 10;
-    cx.fillText(isFinal ? 'MISSION COMPLETE' : `LEVEL ${state.level + 1}`, W / 2, H / 2 - 40);
+    const bannerTitle = unlockingEndless
+      ? 'ENDLESS UNLOCKED'
+      : `LEVEL ${state.level + 1}`;
+    cx.fillText(bannerTitle, W / 2, H / 2 - 40);
     cx.shadowBlur = 0;
 
     cx.fillStyle = COLORS.titleSub;
     cx.font = '11px monospace';
-    cx.fillText(isFinal ? 'You saved the maze!' : 'Get ready!', W / 2, H / 2 - 20);
+    cx.fillText(unlockingEndless ? 'Survive as long as you can!' : 'Get ready!', W / 2, H / 2 - 20);
     cx.textAlign = 'left';
   }
 

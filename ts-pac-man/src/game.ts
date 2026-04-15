@@ -3,7 +3,7 @@ import { COLS, ROWS, T, W, H, COLORS, getMapForLevel, LEVEL_OBJECTIVES, MAX_LEVE
 import { createGhosts, moveGhost } from './ghost';
 import { drawMap, drawPacMan, drawDeadPacMan, drawGhost, drawFruit, drawPowerUp, drawPowerUpIndicator, drawOverlays, drawLivesEmoji, resetSmoothPos, drawObjectiveProgress } from './renderer';
 import { playEatDot, playEatGhee, playEatGhost, playDeath, playLevelComplete, playFruitEat } from './sound';
-import { triggerShake, applyShake, resetShake, spawnDotParticles, spawnGhostExplosion, spawnPowerUpBurst, spawnScorePopup, spawnDeathExplosion, updateAndDrawParticles, updateAndDrawPopups } from './effects';
+import { triggerShake, applyShake, resetShake, spawnDotParticles, spawnGhostExplosion, spawnPowerUpBurst, spawnScorePopup, spawnDeathExplosion, updateAndDrawParticles, updateAndDrawPopups, triggerFlash, drawScreenFlash, haptic } from './effects';
 import { addScore } from './leaderboard';
 
 function isWall(map: number[][], x: number, y: number): boolean {
@@ -108,6 +108,8 @@ export function createInitialState(): GameState {
     ghostKills: 0,
     honeyPotsEaten: 0,
     gameComplete: false,
+    endlessMode: false,
+    invulnTimer: 0,
   };
 }
 
@@ -116,8 +118,10 @@ export function doStart(state: GameState, lvE: HTMLElement, livE: HTMLElement): 
   state.started = true;
   state.gameover = false;
   state.gameComplete = false;
+  state.endlessMode = false;
   state.score = 0;
-  state.lives = 1;
+  state.lives = 3;
+  state.invulnTimer = 0;
   state.level = 1;
   drawLives(state, livE);
   newLevel(state, lvE);
@@ -126,15 +130,17 @@ export function doStart(state: GameState, lvE: HTMLElement, livE: HTMLElement): 
 }
 
 export function doRestart(state: GameState, lvE: HTMLElement, livE: HTMLElement): void {
-  // On victory restart: go back to level 1 fresh.
+  // On victory/endless death restart: go back to level 1 fresh.
   // On failure retry: stay on the same level so the player retries
   // the exact level they died on instead of grinding from level 1.
-  const retryLevel = state.gameComplete ? 1 : state.level;
+  const retryLevel = state.gameComplete || state.endlessMode ? 1 : state.level;
   state.gameover = false;
   state.gameComplete = false;
+  state.endlessMode = false;
   state.goT = 0;
   state.score = 0;
-  state.lives = 1;
+  state.lives = 3;
+  state.invulnTimer = 0;
   state.level = retryLevel;
   drawLives(state, livE);
   newLevel(state, lvE);
@@ -235,6 +241,10 @@ export function gameLoop(
           state.honeyPotsEaten++;
           playEatGhee();
           spawnPowerUpBurst(col, row);
+          spawnScorePopup(col, row, 50);
+          // Juice: gold screen flash + strong haptic pulse
+          triggerFlash('#F2CB05', 0.45);
+          haptic(35);
           state.eatCombo = 0;
           state.frightTime = Math.max(50, 150 - state.level * 20);
           for (const g of state.ghosts) {
@@ -308,6 +318,9 @@ export function gameLoop(
         }
       }
 
+      // Invulnerability decay (brief window after respawn)
+      if (state.invulnTimer > 0) state.invulnTimer--;
+
       // Collision
       for (const g of state.ghosts) {
         if (g.dc < g.del) continue;
@@ -322,16 +335,27 @@ export function gameLoop(
             playEatGhost();
             spawnGhostExplosion(g.x, g.y, g.color);
             spawnScorePopup(g.x, g.y, ghostScore);
-          } else if (!g.eaten) {
-            // Mission mode: one collision = instant game over (no lives)
+            // Juice: color-matching flash + combo haptic
+            triggerFlash(g.color, 0.4);
+            haptic(state.eatCombo >= 2 ? 50 : 25);
+          } else if (!g.eaten && state.invulnTimer <= 0) {
+            // 3-lives system: death animation, life lost, respawn if lives remain.
             playDeath();
             triggerShake(30, 8);
             spawnDeathExplosion(state.px * T + T / 2, state.py * T + T / 2);
-            state.lives = 0;
-            drawLives(state, livE);
-            state.gameover = true;
-            state.goT = 0;
-            addScore(state.score, state.level);
+            triggerFlash('#e74c3c', 0.55);
+            haptic(80);
+            if (state.lives > 1) {
+              state.dead = true;
+              state.deadT = 40;
+            } else {
+              // Last life — straight to game over.
+              state.lives = 0;
+              drawLives(state, livE);
+              state.gameover = true;
+              state.goT = 0;
+              addScore(state.score, state.level);
+            }
           }
         }
       }
@@ -360,7 +384,7 @@ export function gameLoop(
       lastDisplayedHi = roundedHi;
     }
 
-    // Death timer
+    // Death timer — when death animation ends, lose a life + respawn
     if (state.dead) {
       state.deadT--;
       if (state.deadT <= 0) {
@@ -369,10 +393,17 @@ export function gameLoop(
         drawLives(state, livE);
         if (state.lives <= 0) {
           state.gameover = true;
-          state.goT = 80;
+          state.goT = 0;
           addScore(state.score, state.level);
         } else {
+          // Respawn at spawn tile WITHOUT touching mission progress
+          // (honeyPotsEaten, ghostKills, score all preserved)
+          const savedHoney = state.honeyPotsEaten;
+          const savedKills = state.ghostKills;
           resetPositions(state);
+          state.honeyPotsEaten = savedHoney;
+          state.ghostKills = savedKills;
+          state.invulnTimer = 90; // ~1.5s safe window
         }
       }
     }
@@ -391,15 +422,13 @@ export function gameLoop(
       state.cutsceneT--;
       if (state.cutsceneT <= 0) {
         state.cutscene = false;
-        if (state.level >= MAX_LEVEL) {
-          state.gameComplete = true;
-          state.gameover = true;
-          state.goT = 80;
-          addScore(state.score, state.level);
-        } else {
-          state.level++;
-          newLevel(state, lvE);
+        // After clearing L3, unlock endless mode instead of ending the game.
+        // Levels keep incrementing, maps cycle, objectives stay at L3 difficulty.
+        if (state.level >= MAX_LEVEL && !state.endlessMode) {
+          state.endlessMode = true;
         }
+        state.level++;
+        newLevel(state, lvE);
       }
     }
 
@@ -453,6 +482,7 @@ export function gameLoop(
     updateAndDrawPopups(cx);
     drawPowerUpIndicator(cx, state);
     drawObjectiveProgress(cx, state);
+    drawScreenFlash(cx, W, H);
 
     drawOverlays(cx, state);
     cx.restore();
