@@ -150,7 +150,7 @@ export function gameLoop(
     state.frame++;
 
     // === GAME LOGIC ===
-    if (state.started && !state.dead && !state.won && !state.gameover && !state.paused) {
+    if (state.started && !state.dead && !state.won && !state.gameover && !state.paused && !state.cutscene) {
       // Fright timer
       if (state.frightTime > 0) {
         state.frightTime--;

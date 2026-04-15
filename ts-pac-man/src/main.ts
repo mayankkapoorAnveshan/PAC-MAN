@@ -6,6 +6,29 @@ import { getLeaderboard } from './leaderboard';
 
 initRenderer();
 
+// ============================================================
+// BACK GESTURE / BUTTON TRAP
+// Prevents Android back button and iOS left-edge swipe-back from
+// navigating away mid-game. Combines three defenses:
+//   1. History state trap — pushes a dummy state so back button
+//      lands on us instead of exiting. We re-push on every popstate.
+//   2. iOS edge-swipe block — preventDefault on touchstart that
+//      begins within 12px of the left/right screen edge.
+//   3. CSS overscroll-behavior:none — already set in index.html.
+// ============================================================
+try { history.pushState({ pacBack: true }, '', location.href); } catch { /* private mode */ }
+window.addEventListener('popstate', () => {
+  try { history.pushState({ pacBack: true }, '', location.href); } catch { /* ignore */ }
+});
+window.addEventListener('touchstart', (e: TouchEvent) => {
+  if (!e.touches[0]) return;
+  const x = e.touches[0].clientX;
+  const edge = 12;
+  if (x < edge || x > window.innerWidth - edge) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
 const cv = document.getElementById('cv') as HTMLCanvasElement;
 cv.width = W;     // internal resolution (crisp rendering)
 cv.height = H;
@@ -101,15 +124,63 @@ function renderLeaderboardPanel(): void {
 }
 renderLeaderboardPanel();
 
-// Show start button again on game over (for mobile) + refresh leaderboard
+// ============================================================
+// END GAME MODAL — victory / game over popup
+// ============================================================
+const endModal = document.getElementById('endModal') as HTMLElement | null;
+const endCard = endModal?.querySelector('.endCard') as HTMLElement | null;
+const endIcon = document.getElementById('endIcon') as HTMLElement | null;
+const endTitle = document.getElementById('endTitle') as HTMLElement | null;
+const endSubtitle = document.getElementById('endSubtitle') as HTMLElement | null;
+const endScore = document.getElementById('endScore') as HTMLElement | null;
+const endLevel = document.getElementById('endLevel') as HTMLElement | null;
+const endBest = document.getElementById('endBest') as HTMLElement | null;
+const endBoard = document.getElementById('endBoard') as HTMLElement | null;
+const endRetry = document.getElementById('endRetry') as HTMLButtonElement | null;
+const endCloseBtn = document.getElementById('endClose') as HTMLButtonElement | null;
+
+function showEndModal(): void {
+  if (!endModal) return;
+  const victory = state.gameComplete;
+  if (endCard) endCard.classList.toggle('loss', !victory);
+  if (endIcon) endIcon.textContent = victory ? '\u{1F3C6}' : '\u{1F494}';
+  if (endTitle) endTitle.textContent = victory ? 'VICTORY!' : 'GAME OVER';
+  if (endSubtitle) endSubtitle.textContent = victory ? 'All 3 levels cleared' : 'Junk food won this round...';
+  if (endScore) endScore.textContent = String(state.score);
+  if (endLevel) endLevel.textContent = `${state.level}/3`;
+  if (endBest) endBest.textContent = String(state.hi);
+
+  if (endBoard) {
+    const board = getLeaderboard().slice(0, 5);
+    if (board.length === 0) {
+      endBoard.innerHTML = '<div class="empty">No scores yet</div>';
+    } else {
+      endBoard.innerHTML = board.map((entry, i) => {
+        const isMine = entry.score === state.score;
+        return `<div class="row${isMine ? ' mine' : ''}"><span class="rank">#${i + 1}</span><span>${entry.score}</span><span class="lv">L${entry.level}</span></div>`;
+      }).join('');
+    }
+  }
+  endModal.classList.add('show');
+}
+
+function hideEndModal(): void {
+  endModal?.classList.remove('show');
+}
+
+endRetry?.addEventListener('click', () => { hideEndModal(); onRestart(); });
+endRetry?.addEventListener('touchstart', (e) => { e.preventDefault(); hideEndModal(); onRestart(); }, { passive: false });
+endCloseBtn?.addEventListener('click', hideEndModal);
+
+// Show start button again on game over (for mobile) + refresh leaderboard + popup
 let prevGameOver = false;
 function watchGameOver(): void {
   if (state.gameover && state.goT <= 0) {
     startBtn.textContent = 'TAP TO RETRY';
-    startBtn.classList.remove('hidden');
     // Refresh leaderboard once when we enter post-gameover state
     if (!prevGameOver) {
       renderLeaderboardPanel();
+      showEndModal();
       prevGameOver = true;
     }
   } else if (!state.gameover) {

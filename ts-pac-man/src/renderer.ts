@@ -6,7 +6,6 @@ import {
   getGrassSprite, getPowerUpColor,
 } from './sprites';
 import { spawnCowTrail } from './effects';
-import { drawLeaderboard } from './leaderboard';
 
 // ============================================================
 // INITIALIZE - Pre-cache all pixel art sprites
@@ -892,60 +891,10 @@ export function drawOverlays(cx: CanvasRenderingContext2D, state: GameState): vo
     overlayAlpha = 0;
   }
 
-  // --- Game Over ---
+  // --- Game Over — HTML modal renders the real UI; just dim the canvas ---
   if (state.gameover && state.goT <= 0) {
-    const goAlpha = Math.min(1, (80 - state.goT) / 30);
-    cx.globalAlpha = goAlpha;
     cx.fillStyle = COLORS.overlayBg;
     cx.fillRect(0, 0, W, H);
-
-    if (state.gameComplete) {
-      // Victory banner — pulsing gold
-      const pulse = 10 + Math.sin(state.frame * 0.08) * 6;
-      cx.fillStyle = COLORS.titleMain;
-      cx.font = 'bold 26px monospace';
-      cx.textAlign = 'center';
-      cx.shadowColor = '#F2CB05';
-      cx.shadowBlur = pulse;
-      cx.fillText('VICTORY!', W / 2, H / 2 - 40);
-      cx.shadowBlur = 0;
-
-      cx.fillStyle = COLORS.titleSub;
-      cx.font = 'bold 12px monospace';
-      cx.fillText('ALL 3 LEVELS CLEARED', W / 2, H / 2 - 14);
-
-      cx.fillStyle = '#FFF';
-      cx.font = '10px monospace';
-      cx.fillText('Score: ' + state.score, W / 2, H / 2 + 8);
-    } else {
-      // Shaking GAME OVER text
-      const shk = Math.sin(state.frame * 0.2) * 2;
-      cx.fillStyle = COLORS.gameoverText;
-      cx.font = 'bold 26px monospace';
-      cx.textAlign = 'center';
-      cx.shadowColor = '#e74c3c';
-      cx.shadowBlur = 10;
-      cx.fillText('GAME OVER', W / 2 + shk, H / 2 - 30);
-      cx.shadowBlur = 0;
-
-      cx.fillStyle = COLORS.honeyDrop;
-      cx.font = '11px monospace';
-      cx.fillText('Junk food won this time...', W / 2, H / 2 + 0);
-
-      cx.fillStyle = '#FFF';
-      cx.font = '10px monospace';
-      cx.fillText('Score: ' + state.score, W / 2, H / 2 + 22);
-    }
-
-    const blink = Math.sin(state.frame * 0.08) * 0.5 + 0.5;
-    cx.globalAlpha = blink;
-    cx.fillStyle = COLORS.textPrimary;
-    cx.font = 'bold 12px monospace';
-    cx.fillText(state.gameComplete ? 'PRESS ANY KEY TO PLAY AGAIN' : 'PRESS ANY KEY TO TRY AGAIN', W / 2, H / 2 + 48);
-    cx.globalAlpha = goAlpha;
-    drawLeaderboard(cx, W, H);
-    cx.textAlign = 'left';
-    cx.globalAlpha = 1;
   }
 
   // --- Cut-scene between levels ---
