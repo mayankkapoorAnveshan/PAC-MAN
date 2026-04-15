@@ -2,8 +2,8 @@ import { GameState } from './types';
 import { COLS, ROWS, T, W, H, COLORS, getMapForLevel, LEVEL_OBJECTIVES, MAX_LEVEL } from './constants';
 import { createGhosts, moveGhost } from './ghost';
 import { drawMap, drawPacMan, drawDeadPacMan, drawGhost, drawFruit, drawPowerUp, drawPowerUpIndicator, drawOverlays, drawLivesEmoji, resetSmoothPos, drawObjectiveProgress } from './renderer';
-import { playEatDot, playEatGhee, playEatGhost, playDeath, playLevelComplete, playFruitEat } from './sound';
-import { triggerShake, applyShake, resetShake, spawnDotParticles, spawnGhostExplosion, spawnPowerUpBurst, spawnScorePopup, spawnDeathExplosion, updateAndDrawParticles, updateAndDrawPopups, triggerFlash, drawScreenFlash, haptic } from './effects';
+import { playEatDot, playEatGhee, playEatGhost, playDeath, playLevelComplete, playFruitEat, playComboChime, playComboVoice } from './sound';
+import { triggerShake, applyShake, resetShake, spawnDotParticles, spawnGhostExplosion, spawnPowerUpBurst, spawnScorePopup, spawnDeathExplosion, updateAndDrawParticles, updateAndDrawPopups, triggerFlash, drawScreenFlash, haptic, spawnComboBanner, updateAndDrawComboBanner } from './effects';
 import { addScore } from './leaderboard';
 
 function isWall(map: number[][], x: number, y: number): boolean {
@@ -406,6 +406,16 @@ export function gameLoop(
             // Juice: color-matching flash + combo haptic
             triggerFlash(g.color, 0.4);
             haptic(state.eatCombo >= 2 ? 50 : 25);
+            // Candy-Crush-style combo reward — only fires on 2x+ chains.
+            // Banner text + pitch ramp with combo tier (2→Sweet, 3→Delicious, 4→Divine).
+            if (state.eatCombo >= 2) {
+              const tier = state.eatCombo - 1; // 1..3 for 2x..4x
+              const banners = ['SWEET!', 'DELICIOUS!', 'DIVINE!', 'UNSTOPPABLE!'];
+              spawnComboBanner(banners[Math.min(tier, banners.length - 1)], g.color);
+              playComboChime(tier);
+              playComboVoice(tier);
+              triggerShake(15, 4);
+            }
           } else if (!g.eaten) {
             // Instant game over — one collision ends the run and pops the modal.
             playDeath();
@@ -549,6 +559,9 @@ export function gameLoop(
     drawPowerUpIndicator(cx, state);
     drawObjectiveProgress(cx, state);
     drawScreenFlash(cx, W, H);
+    // Combo banner sits on top of everything except overlays so the player
+    // can't miss the "SWEET!" / "DELICIOUS!" reward during chain kills.
+    updateAndDrawComboBanner(cx, W, H);
 
     drawOverlays(cx, state);
     cx.restore();

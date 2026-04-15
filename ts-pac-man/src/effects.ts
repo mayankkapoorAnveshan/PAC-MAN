@@ -229,3 +229,66 @@ export function updateAndDrawPopups(cx: CanvasRenderingContext2D): void {
   }
   cx.globalAlpha = 1;
 }
+
+// ============================================================
+// COMBO BANNER - Big centered "SWEET!" / "DELICIOUS!" text
+// Uses a scale-in bounce and slow fade for a Candy-Crush-y punch.
+// Only one banner is active at a time — newer combos replace older.
+// ============================================================
+
+interface ComboBanner {
+  text: string;
+  color: string;
+  life: number;
+  maxLife: number;
+}
+
+let comboBanner: ComboBanner | null = null;
+
+export function spawnComboBanner(text: string, color: string = '#F2CB05'): void {
+  comboBanner = { text, color, life: 70, maxLife: 70 };
+}
+
+export function updateAndDrawComboBanner(
+  cx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+): void {
+  if (!comboBanner) return;
+  comboBanner.life--;
+  if (comboBanner.life <= 0) { comboBanner = null; return; }
+
+  const t = comboBanner.life / comboBanner.maxLife;
+  // Scale-in bounce: starts at 0.3, overshoots to 1.15, settles at 1.0
+  const progress = 1 - t;
+  let scale: number;
+  if (progress < 0.2) {
+    scale = 0.3 + (progress / 0.2) * 0.85; // 0.3 → 1.15
+  } else if (progress < 0.35) {
+    scale = 1.15 - ((progress - 0.2) / 0.15) * 0.15; // 1.15 → 1.0
+  } else {
+    scale = 1.0;
+  }
+
+  const alpha = t < 0.3 ? t / 0.3 : 1; // fade out in last 30% of life
+
+  cx.save();
+  cx.globalAlpha = alpha;
+  cx.translate(w / 2, h / 2 - 30);
+  cx.scale(scale, scale);
+  cx.font = 'bold 32px monospace';
+  cx.textAlign = 'center';
+  cx.shadowColor = comboBanner.color;
+  cx.shadowBlur = 24;
+  cx.fillStyle = comboBanner.color;
+  cx.fillText(comboBanner.text, 0, 0);
+  cx.shadowBlur = 0;
+  // White core for extra punch
+  cx.fillStyle = '#FFFFFF';
+  cx.globalAlpha = alpha * 0.7;
+  cx.font = 'bold 30px monospace';
+  cx.fillText(comboBanner.text, 0, 0);
+  cx.restore();
+  cx.textAlign = 'left';
+  cx.globalAlpha = 1;
+}

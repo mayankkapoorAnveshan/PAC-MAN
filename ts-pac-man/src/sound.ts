@@ -61,3 +61,44 @@ export function playFruitEat(): void {
   setTimeout(() => playTone(700, 0.1, 'sine', 0.12), 50);
   setTimeout(() => playTone(1000, 0.2, 'sine', 0.15), 100);
 }
+
+// ============================================================
+// COMBO AUDIO — Candy-Crush-style rewarding chime + voice line
+// Plays when player chains 2+ ghost kills in one fright window.
+// Tier 1 = 2x combo → Sweet C-E-G triad
+// Tier 2 = 3x combo → Brighter C-E-G-C four-note arpeggio
+// Tier 3 = 4x combo → Full progression + higher voice pitch
+// ============================================================
+
+const COMBO_VOICES = ['Sweet!', 'Delicious!', 'Divine!', 'Unstoppable!'];
+
+export function playComboChime(tier: number): void {
+  // Chord progressions — mapped to satisfying major thirds / perfect fifths
+  const tones: [number, number][] = [
+    // [frequency Hz, delay ms]
+    [523, 0],    // C5
+    [659, 60],   // E5
+    [784, 120],  // G5
+  ];
+  if (tier >= 2) tones.push([1047, 180]); // C6
+  if (tier >= 3) tones.push([1319, 240]); // E6
+
+  const dur = 0.35;
+  const vol = 0.12 + tier * 0.02;
+  for (const [freq, delay] of tones) {
+    setTimeout(() => playTone(freq, dur, 'triangle', vol), delay);
+  }
+}
+
+export function playComboVoice(tier: number): void {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  try {
+    const idx = Math.min(tier, COMBO_VOICES.length - 1);
+    const utter = new SpeechSynthesisUtterance(COMBO_VOICES[idx]);
+    utter.rate = 1.25;
+    utter.pitch = 1.2 + tier * 0.2; // higher pitch for bigger combos
+    utter.volume = 0.9;
+    speechSynthesis.cancel(); // kill any queued utterance so tiers don't overlap
+    speechSynthesis.speak(utter);
+  } catch (_) { /* ignore */ }
+}
