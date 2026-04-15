@@ -253,8 +253,8 @@ export function gameLoop(
         const speedMult = (state.powerUp.effectTimer > 0 && state.powerUp.type === 'speed') ? 1.5 : 1;
         state.px += state.dx * state.spd * speedMult;
         state.py += state.dy * state.spd * speedMult;
-        if (state.px < -1) state.px = COLS;
-        if (state.px > COLS) state.px = -1;
+        if (state.px < -0.5) state.px += COLS;
+        if (state.px > COLS - 0.5) state.px -= COLS;
       }
 
       // Move ghosts (skip if frozen)

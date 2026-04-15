@@ -3,7 +3,7 @@ import { T, COLS, ROWS, W, H, COLORS } from './constants';
 import {
   initSprites, drawSprite,
   getEnemySprite, getScaredSprite, getEyesSprite,
-  getMangoSprite, getPowerUpColor,
+  getGrassSprite, getPowerUpColor,
 } from './sprites';
 import { spawnCowTrail } from './effects';
 import { drawLeaderboard } from './leaderboard';
@@ -788,15 +788,15 @@ export function drawPowerUpIndicator(cx: CanvasRenderingContext2D, state: GameSt
 }
 
 // ============================================================
-// FRUIT BONUS - Mango
+// FRUIT BONUS - Grass tuft
 // ============================================================
 
 export function drawFruit(cx: CanvasRenderingContext2D, state: GameState): void {
   if (!state.fruit.active) return;
   const fx = state.fruit.x * T + T / 2;
   const fy = state.fruit.y * T + T / 2;
-  const mango = getMangoSprite();
-  drawSprite(cx, mango.name, mango.sprite, fx, fy, 2);
+  const grass = getGrassSprite();
+  drawSprite(cx, grass.name, grass.sprite, fx, fy, 2);
 }
 
 

@@ -341,24 +341,23 @@ const EYES_ONLY: Sprite = [
 
 
 // ============================================================
-// FRUIT BONUS - Mango sprite (12x12)
+// FRUIT BONUS - Grass tuft sprite (12x12)
 // ============================================================
-const MO = '#FF8C00'; // Orange
-const MY = '#FFD700'; // Yellow
-const MG = '#228B22'; // Green stem
-const ML = '#32CD32'; // Light green leaf
+const MG = '#228B22'; // Dark green
+const ML = '#3FD948'; // Bright leaf green
+const MH = '#7FE87F'; // Highlight tip
 
-const MANGO: Sprite = [
-  [_, _, _, _, MG, MG, _, _, _, _, _, _],
-  [_, _, _, MG, MG, ML, ML, _, _, _, _, _],
-  [_, _, MY, MY, MO, MO, MO, MY, _, _, _, _],
-  [_, MY, MO, MO, MO, MO, MO, MO, MY, _, _, _],
-  [_, MO, MO, MO, MO, MO, MO, MO, MO, _, _, _],
-  [_, MO, MO, MO, MO, MO, MO, MO, MO, _, _, _],
-  [_, MO, MO, MO, MO, MO, MO, MO, MO, _, _, _],
-  [_, MY, MO, MO, MO, MO, MO, MO, MY, _, _, _],
-  [_, _, MY, MO, MO, MO, MO, MY, _, _, _, _],
-  [_, _, _, MY, MY, MY, MY, _, _, _, _, _],
+const GRASS: Sprite = [
+  [_, _, _, MH, _, _, MH, _, _, MH, _, _],
+  [_, _, ML, ML, _, ML, ML, _, ML, ML, _, _],
+  [_, _, ML, ML, ML, ML, ML, ML, ML, ML, _, _],
+  [_, ML, ML, ML, ML, ML, ML, ML, ML, ML, ML, _],
+  [_, ML, MG, ML, MG, ML, MG, ML, MG, ML, ML, _],
+  [_, ML, MG, MG, MG, MG, MG, MG, MG, MG, ML, _],
+  [_, _, MG, MG, MG, MG, MG, MG, MG, MG, _, _],
+  [_, _, _, MG, MG, MG, MG, MG, MG, _, _, _],
+  [_, _, _, _, _, _, _, _, _, _, _, _],
+  [_, _, _, _, _, _, _, _, _, _, _, _],
   [_, _, _, _, _, _, _, _, _, _, _, _],
   [_, _, _, _, _, _, _, _, _, _, _, _],
 ];
@@ -424,7 +423,7 @@ export function initSprites(): void {
   getCachedSprite('eyes', EYES_ONLY, s);
   getCachedSprite('honey', HONEY_DROP, s);
   getCachedSprite('ghee', GHEE_JAR, s);
-  getCachedSprite('mango', MANGO, s);
+  getCachedSprite('grass', GRASS, s);
 }
 
 // Draw a 16x16 sprite centered at tile position
@@ -481,8 +480,8 @@ export function getGheeSprite(): { name: string; sprite: (string | null)[][] } {
   return { name: 'ghee', sprite: GHEE_JAR };
 }
 
-export function getMangoSprite(): { name: string; sprite: (string | null)[][] } {
-  return { name: 'mango', sprite: MANGO };
+export function getGrassSprite(): { name: string; sprite: (string | null)[][] } {
+  return { name: 'grass', sprite: GRASS };
 }
 
 // Power-up indicator colors
