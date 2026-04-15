@@ -120,7 +120,7 @@ export function doStart(state: GameState, lvE: HTMLElement, livE: HTMLElement): 
   state.gameComplete = false;
   state.endlessMode = false;
   state.score = 0;
-  state.lives = 3;
+  state.lives = 1;
   state.invulnTimer = 0;
   state.level = 1;
   drawLives(state, livE);
@@ -139,7 +139,7 @@ export function doRestart(state: GameState, lvE: HTMLElement, livE: HTMLElement)
   state.endlessMode = false;
   state.goT = 0;
   state.score = 0;
-  state.lives = 3;
+  state.lives = 1;
   state.invulnTimer = 0;
   state.level = retryLevel;
   drawLives(state, livE);
@@ -338,24 +338,18 @@ export function gameLoop(
             // Juice: color-matching flash + combo haptic
             triggerFlash(g.color, 0.4);
             haptic(state.eatCombo >= 2 ? 50 : 25);
-          } else if (!g.eaten && state.invulnTimer <= 0) {
-            // 3-lives system: death animation, life lost, respawn if lives remain.
+          } else if (!g.eaten) {
+            // Instant game over — one collision ends the run and pops the modal.
             playDeath();
             triggerShake(30, 8);
             spawnDeathExplosion(state.px * T + T / 2, state.py * T + T / 2);
             triggerFlash('#e74c3c', 0.55);
             haptic(80);
-            if (state.lives > 1) {
-              state.dead = true;
-              state.deadT = 40;
-            } else {
-              // Last life — straight to game over.
-              state.lives = 0;
-              drawLives(state, livE);
-              state.gameover = true;
-              state.goT = 0;
-              addScore(state.score, state.level);
-            }
+            state.lives = 0;
+            drawLives(state, livE);
+            state.gameover = true;
+            state.goT = 0;
+            addScore(state.score, state.level);
           }
         }
       }
