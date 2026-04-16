@@ -1,5 +1,5 @@
 import { GameState } from './types';
-import { COLS, ROWS, T, W, H, COLORS, getMapForLevel, LEVEL_OBJECTIVES, MAX_LEVEL } from './constants';
+import { COLS, ROWS, T, W, H, getMapForLevel, LEVEL_OBJECTIVES, MAX_LEVEL, getLevelTheme } from './constants';
 import { createGhosts, moveGhost } from './ghost';
 import { drawMap, drawPacMan, drawDeadPacMan, drawGhost, drawFruit, drawPowerUp, drawPowerUpIndicator, drawOverlays, drawLivesEmoji, resetSmoothPos, drawObjectiveProgress } from './renderer';
 import { playEatDot, playEatGhee, playEatGhost, playDeath, playLevelComplete, playFruitEat, playComboChime, playComboVoice } from './sound';
@@ -527,9 +527,10 @@ export function gameLoop(
     }
 
     // === CANVAS RENDER ===
+    const theme = getLevelTheme(state.level);
     cx.save();
     applyShake(cx);
-    cx.fillStyle = COLORS.bg;
+    cx.fillStyle = theme.bg;
     cx.fillRect(0, 0, W, H);
 
     if (state.started) {
@@ -549,7 +550,7 @@ export function gameLoop(
     }
 
     if (state.won && state.frame % 20 < 10) {
-      cx.fillStyle = COLORS.winFlash;
+      cx.fillStyle = theme.winFlash;
       cx.fillRect(0, 0, W, H);
     }
 

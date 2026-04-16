@@ -694,6 +694,22 @@ canvas{
   animation:endPulse 2s ease-in-out infinite;
 }
 .endRetry:active{transform:scale(0.97)}
+.endClaim{
+  display:block;width:100%;
+  margin-top:10px;
+  padding:13px;
+  background:linear-gradient(180deg,rgba(78,205,196,0.35) 0%,rgba(78,205,196,0.15) 100%);
+  color:#fffbe8;
+  border:2px solid rgba(78,205,196,0.6);
+  border-radius:10px;
+  font-family:inherit;
+  font-size:13px;font-weight:bold;
+  letter-spacing:2.5px;
+  cursor:pointer;
+  transition:all 0.2s ease;
+}
+.endClaim:active{transform:scale(0.97)}
+.endClaim:hover{box-shadow:0 0 20px rgba(78,205,196,0.4)}
 </style>
 </head>
 <body>
@@ -904,6 +920,7 @@ canvas{
     <div class="endBoardLabel">TOP SCORES</div>
     <div class="endBoard" id="endBoard"></div>
     <button class="endRetry" id="endRetry">PLAY AGAIN</button>
+    <button class="endClaim" id="endClaim">CLAIM YOUR POINTS</button>
   </div>
 </div>
 <div id="ft">ANVESHAN 2026</div>

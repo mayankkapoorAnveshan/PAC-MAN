@@ -1,5 +1,5 @@
 import { Ghost, GameState } from './types';
-import { T, COLS, ROWS, W, H, COLORS, MAX_LEVEL } from './constants';
+import { T, COLS, ROWS, W, H, COLORS, MAX_LEVEL, getLevelTheme } from './constants';
 import {
   initSprites, drawSprite,
   getEnemySprite, getScaredSprite, getEyesSprite,
@@ -21,15 +21,16 @@ export function initRenderer(): void {
 // ============================================================
 
 export function drawMap(cx: CanvasRenderingContext2D, state: GameState): void {
+  const theme = getLevelTheme(state.level);
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       const x = c * T;
       const y = r * T;
       const t = state.map[r][c];
 
-      // --- Walls: Anveshan teal ---
+      // --- Walls: themed per level ---
       if (t === 1) {
-        cx.strokeStyle = COLORS.wall;
+        cx.strokeStyle = theme.wall;
         cx.lineWidth = 2;
         const tp = r > 0 && state.map[r - 1][c] === 1;
         const bt = r < ROWS - 1 && state.map[r + 1][c] === 1;
@@ -55,8 +56,8 @@ export function drawMap(cx: CanvasRenderingContext2D, state: GameState): void {
     }
   }
 
-  // --- Ghost house door: golden gate ---
-  cx.fillStyle = COLORS.ghostDoor;
+  // --- Ghost house door: themed gate ---
+  cx.fillStyle = theme.ghostDoor;
   cx.fillRect(8 * T, 8 * T + T / 2 - 2, 5 * T, 4);
 }
 
@@ -868,12 +869,13 @@ const startParticles = Array.from({ length: 18 }, (_, i) => ({
 }));
 
 export function drawOverlays(cx: CanvasRenderingContext2D, state: GameState): void {
+  const theme = getLevelTheme(state.level);
   // --- Start Screen ---
   if (!state.started) {
     startScreenFrame++;
     overlayAlpha = Math.min(overlayAlpha + 0.03, 1);
     cx.globalAlpha = overlayAlpha;
-    cx.fillStyle = COLORS.overlayBg;
+    cx.fillStyle = theme.overlayBg;
     cx.fillRect(0, 0, W, H);
 
     // --- Layer 1: Floating honey drop particles (background) ---
@@ -981,7 +983,7 @@ export function drawOverlays(cx: CanvasRenderingContext2D, state: GameState): vo
 
     // Control hints
     cx.globalAlpha = overlayAlpha * bodyAlpha;
-    cx.fillStyle = COLORS.textMuted;
+    cx.fillStyle = theme.textMuted;
     cx.font = '9px monospace';
     cx.fillText(isTouch ? 'SWIPE or D-PAD = Move' : 'ARROW KEYS / WASD = Move', W / 2, H / 2 + 80);
     cx.fillText(isTouch ? 'TAP PAUSE = Pause' : 'SPACE = Pause', W / 2, H / 2 + 96);
@@ -994,13 +996,13 @@ export function drawOverlays(cx: CanvasRenderingContext2D, state: GameState): vo
 
   // --- Game Over — HTML modal renders the real UI; just dim the canvas ---
   if (state.gameover && state.goT <= 0) {
-    cx.fillStyle = COLORS.overlayBg;
+    cx.fillStyle = theme.overlayBg;
     cx.fillRect(0, 0, W, H);
   }
 
   // --- Cut-scene between levels ---
   if (state.cutscene) {
-    cx.fillStyle = COLORS.overlayBg;
+    cx.fillStyle = theme.overlayBg;
     cx.fillRect(0, 0, W, H);
 
     // Cow chasing ghost across screen
@@ -1037,7 +1039,7 @@ export function drawOverlays(cx: CanvasRenderingContext2D, state: GameState): vo
 
   // --- Paused ---
   if (state.paused) {
-    cx.fillStyle = COLORS.overlayBg;
+    cx.fillStyle = theme.overlayBg;
     cx.fillRect(0, 0, W, H);
     cx.fillStyle = COLORS.titleMain;
     cx.font = 'bold 22px monospace';

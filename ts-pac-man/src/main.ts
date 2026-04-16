@@ -139,6 +139,7 @@ const endLevel = document.getElementById('endLevel') as HTMLElement | null;
 const endBest = document.getElementById('endBest') as HTMLElement | null;
 const endBoard = document.getElementById('endBoard') as HTMLElement | null;
 const endRetry = document.getElementById('endRetry') as HTMLButtonElement | null;
+const endClaim = document.getElementById('endClaim') as HTMLButtonElement | null;
 const endCloseBtn = document.getElementById('endClose') as HTMLButtonElement | null;
 
 function showEndModal(): void {
@@ -168,6 +169,9 @@ function showEndModal(): void {
       }).join('');
     }
   }
+  if (endClaim) {
+    endClaim.textContent = `CLAIM YOUR ${state.score} POINTS`;
+  }
   endModal.classList.add('show');
 }
 
@@ -187,8 +191,17 @@ function doModalRetry(): void {
   setTimeout(() => { retryInFlight = false; }, 400);
 }
 
+function doClaimPoints(): void {
+  const score = state.score;
+  const level = state.level;
+  const url = `https://anveshan.farm/?utm_source=pacman&utm_medium=game&score=${score}&level=${level}`;
+  window.open(url, '_blank');
+}
+
 endRetry?.addEventListener('click', doModalRetry);
 endRetry?.addEventListener('touchstart', (e) => { e.preventDefault(); doModalRetry(); }, { passive: false });
+endClaim?.addEventListener('click', doClaimPoints);
+endClaim?.addEventListener('touchstart', (e) => { e.preventDefault(); doClaimPoints(); }, { passive: false });
 
 // Close (×) button exits the run — full page reload so the player gets a
 // clean state (leaderboard refreshed, tutorial available again, no stale
