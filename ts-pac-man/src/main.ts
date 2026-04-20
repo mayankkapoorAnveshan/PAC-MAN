@@ -2,7 +2,13 @@ import { W, H } from './constants';
 import { createInitialState, doStart, doRestart, drawLives, gameLoop } from './game';
 import { setupInput } from './input';
 import { initRenderer } from './renderer';
-import { getLeaderboard } from './leaderboard';
+import {
+  getLeaderboard,
+  attachIdentityToScore,
+  qualifiesForLeaderboard,
+  getSavedName,
+  getSavedEmail,
+} from './leaderboard';
 
 initRenderer();
 
@@ -118,11 +124,18 @@ function renderLeaderboardPanel(): void {
     return;
   }
   topBoard.classList.remove('empty');
-  // Render each entry as a small chip: #1 1250 (L3)
+  // Render each entry as a small chip: #1 NAME 1250 L3
   tbList.innerHTML = board.map((entry, i) => {
     const rankClass = i === 0 ? 'tbEntry rank1' : 'tbEntry';
-    return `<div class="${rankClass}"><span class="rank">#${i + 1}</span>${entry.score} <span style="opacity:0.7">L${entry.level}</span></div>`;
+    const nameTag = entry.name ? `${escapeHtml(entry.name).slice(0, 8)} ` : '';
+    return `<div class="${rankClass}"><span class="rank">#${i + 1}</span>${nameTag}${entry.score} <span style="opacity:0.7">L${entry.level}</span></div>`;
   }).join('');
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, ch => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+  }[ch] as string));
 }
 renderLeaderboardPanel();
 
@@ -140,7 +153,18 @@ const endBest = document.getElementById('endBest') as HTMLElement | null;
 const endBoard = document.getElementById('endBoard') as HTMLElement | null;
 const endRetry = document.getElementById('endRetry') as HTMLButtonElement | null;
 const endClaim = document.getElementById('endClaim') as HTMLButtonElement | null;
+const endShare = document.getElementById('endShare') as HTMLButtonElement | null;
 const endCloseBtn = document.getElementById('endClose') as HTMLButtonElement | null;
+const endCapture = document.getElementById('endCapture') as HTMLElement | null;
+const capName = document.getElementById('capName') as HTMLInputElement | null;
+const capEmail = document.getElementById('capEmail') as HTMLInputElement | null;
+const capSubmit = document.getElementById('capSubmit') as HTMLButtonElement | null;
+const capSaved = document.getElementById('capSaved') as HTMLElement | null;
+const endCoupon = document.getElementById('endCoupon') as HTMLElement | null;
+const cpCode = document.getElementById('cpCode') as HTMLElement | null;
+const cpCopy = document.getElementById('cpCopy') as HTMLButtonElement | null;
+
+const COUPON_CODE = 'PACMAN10';
 
 function showEndModal(): void {
   if (!endModal) return;
@@ -165,13 +189,49 @@ function showEndModal(): void {
     } else {
       endBoard.innerHTML = board.map((entry, i) => {
         const isMine = entry.score === state.score;
-        return `<div class="row${isMine ? ' mine' : ''}"><span class="rank">#${i + 1}</span><span>${entry.score}</span><span class="lv">L${entry.level}</span></div>`;
+        const nm = entry.name ? `${escapeHtml(entry.name).slice(0, 10)} ` : '';
+        return `<div class="row${isMine ? ' mine' : ''}"><span class="rank">#${i + 1}</span><span>${nm}${entry.score}</span><span class="lv">L${entry.level}</span></div>`;
       }).join('');
     }
   }
   if (endClaim) {
     endClaim.textContent = `CLAIM YOUR ${state.score} POINTS`;
   }
+
+  // Email capture: show only when score qualifies for top-5 AND we don't
+  // already have an email saved against this exact score.
+  if (endCapture) {
+    const qualifies = qualifiesForLeaderboard(state.score);
+    const board = getLeaderboard();
+    const alreadyCaptured = board.some(e => e.score === state.score && !!e.email);
+    if (qualifies && !alreadyCaptured) {
+      endCapture.classList.add('show');
+      if (capName) capName.value = getSavedName();
+      if (capEmail) capEmail.value = getSavedEmail();
+      if (capSaved) capSaved.style.display = 'none';
+      if (capSubmit) {
+        capSubmit.disabled = false;
+        capSubmit.textContent = 'SAVE MY SCORE';
+      }
+    } else {
+      endCapture.classList.remove('show');
+    }
+  }
+
+  // Coupon: only on full victory (cleared all levels)
+  if (endCoupon) {
+    if (state.gameComplete) {
+      endCoupon.classList.add('show');
+      if (cpCode) cpCode.textContent = COUPON_CODE;
+      if (cpCopy) {
+        cpCopy.classList.remove('copied');
+        cpCopy.textContent = 'COPY CODE';
+      }
+    } else {
+      endCoupon.classList.remove('show');
+    }
+  }
+
   endModal.classList.add('show');
 }
 
@@ -194,14 +254,78 @@ function doModalRetry(): void {
 function doClaimPoints(): void {
   const score = state.score;
   const level = state.level;
-  const url = `https://anveshan.farm/?utm_source=pacman&utm_medium=game&score=${score}&level=${level}`;
+  const coupon = state.gameComplete ? `&coupon=${COUPON_CODE}` : '';
+  const url = `https://anveshan.farm/?utm_source=pacman&utm_medium=game&score=${score}&level=${level}${coupon}`;
   window.open(url, '_blank');
+}
+
+// ----- Email capture submit -----
+function doCaptureSubmit(): void {
+  if (!capName || !capEmail) return;
+  const name = capName.value.trim();
+  const email = capEmail.value.trim();
+  if (!name) { capName.focus(); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { capEmail.focus(); return; }
+  attachIdentityToScore(state.score, name, email);
+  if (capSaved) capSaved.style.display = 'block';
+  if (capSubmit) {
+    capSubmit.disabled = true;
+    capSubmit.textContent = 'SAVED \u2713';
+  }
+  renderLeaderboardPanel();
+}
+capSubmit?.addEventListener('click', doCaptureSubmit);
+capSubmit?.addEventListener('touchstart', (e) => { e.preventDefault(); doCaptureSubmit(); }, { passive: false });
+
+// ----- Coupon copy -----
+function doCopyCoupon(): void {
+  const code = cpCode?.textContent ?? COUPON_CODE;
+  const done = () => {
+    if (!cpCopy) return;
+    cpCopy.classList.add('copied');
+    cpCopy.textContent = 'COPIED \u2713';
+    setTimeout(() => {
+      cpCopy.classList.remove('copied');
+      cpCopy.textContent = 'COPY CODE';
+    }, 1800);
+  };
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(code).then(done, done);
+  } else {
+    // Fallback for very old browsers
+    const ta = document.createElement('textarea');
+    ta.value = code;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch { /* ignore */ }
+    document.body.removeChild(ta);
+    done();
+  }
+}
+cpCopy?.addEventListener('click', doCopyCoupon);
+cpCopy?.addEventListener('touchstart', (e) => { e.preventDefault(); doCopyCoupon(); }, { passive: false });
+
+// ----- Share score (Web Share API + WhatsApp fallback) -----
+function doShare(): void {
+  const score = state.score;
+  const level = state.level;
+  const url = 'https://anveshan.farm/?utm_source=pacman&utm_medium=share';
+  const text = `\u{1F420} I scored ${score} on Anveshan Pac-Man (Level ${level})! Beat me \u{1F449} ${url}`;
+  const shareData = { title: 'Anveshan Pac-Man', text, url };
+  if (navigator.share) {
+    navigator.share(shareData).catch(() => { /* user dismissed */ });
+  } else {
+    const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(wa, '_blank');
+  }
 }
 
 endRetry?.addEventListener('click', doModalRetry);
 endRetry?.addEventListener('touchstart', (e) => { e.preventDefault(); doModalRetry(); }, { passive: false });
 endClaim?.addEventListener('click', doClaimPoints);
 endClaim?.addEventListener('touchstart', (e) => { e.preventDefault(); doClaimPoints(); }, { passive: false });
+endShare?.addEventListener('click', doShare);
+endShare?.addEventListener('touchstart', (e) => { e.preventDefault(); doShare(); }, { passive: false });
 
 // Close (×) button exits the run — full page reload so the player gets a
 // clean state (leaderboard refreshed, tutorial available again, no stale

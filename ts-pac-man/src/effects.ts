@@ -92,6 +92,7 @@ export function spawnCowTrail(x: number, y: number, dx: number, dy: number): voi
   }
 }
 
+
 // Big death explosion — rings of white + gold shrapnel
 export function spawnDeathExplosion(x: number, y: number): void {
   for (let i = 0; i < 40; i++) {

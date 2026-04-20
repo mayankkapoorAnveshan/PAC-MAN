@@ -710,6 +710,119 @@ canvas{
 }
 .endClaim:active{transform:scale(0.97)}
 .endClaim:hover{box-shadow:0 0 20px rgba(78,205,196,0.4)}
+
+/* ============================================================
+   EMAIL CAPTURE — shown when score qualifies for top 5
+   ============================================================ */
+.endCapture{
+  display:none;
+  background:rgba(0,0,0,0.32);
+  border:1px solid rgba(242,203,5,0.35);
+  border-radius:10px;
+  padding:10px 12px 12px;
+  margin-bottom:14px;
+  text-align:left;
+}
+.endCapture.show{display:block;animation:endCardIn 0.4s ease-out}
+.endCapture .capLabel{
+  font-size:9px;letter-spacing:1.6px;color:#F2CB05;
+  text-align:center;margin-bottom:6px;
+  text-shadow:0 0 8px rgba(242,203,5,0.4);
+}
+.endCapture .capSub{
+  font-size:8px;color:#7ab8a8;text-align:center;letter-spacing:1px;
+  margin-bottom:8px;line-height:1.4;
+}
+.endCapture input{
+  display:block;width:100%;
+  padding:9px 10px;margin-bottom:6px;
+  background:rgba(1,31,26,0.6);
+  border:1px solid rgba(78,205,196,0.4);
+  border-radius:7px;
+  color:#fffbe8;
+  font-family:inherit;
+  font-size:11px;
+  letter-spacing:1px;
+  outline:none;
+  transition:border-color 0.15s ease;
+}
+.endCapture input:focus{border-color:#F2CB05}
+.endCapture input::placeholder{color:#4a8a7a;letter-spacing:1px}
+.endCapture .capSubmit{
+  display:block;width:100%;
+  padding:9px;margin-top:4px;
+  background:linear-gradient(180deg,rgba(78,205,196,0.45),rgba(78,205,196,0.18));
+  color:#fffbe8;
+  border:1.5px solid #4ecdc4;
+  border-radius:7px;
+  font-family:inherit;font-size:11px;font-weight:bold;letter-spacing:2px;
+  cursor:pointer;
+}
+.endCapture .capSubmit:active{transform:scale(0.97)}
+.endCapture .capSaved{
+  font-size:10px;color:#4ecdc4;text-align:center;
+  letter-spacing:1px;margin-top:4px;
+}
+
+/* ============================================================
+   COUPON REVEAL — shown only on victory (all levels cleared)
+   ============================================================ */
+.endCoupon{
+  display:none;
+  background:linear-gradient(135deg,rgba(242,203,5,0.22),rgba(242,203,5,0.08));
+  border:1.5px dashed rgba(242,203,5,0.7);
+  border-radius:10px;
+  padding:10px 12px;
+  margin-bottom:14px;
+  text-align:center;
+  position:relative;
+}
+.endCoupon.show{display:block;animation:endCardIn 0.5s ease-out}
+.endCoupon .cpLabel{
+  font-size:9px;letter-spacing:1.6px;color:#F2CB05;
+  margin-bottom:4px;
+  text-shadow:0 0 6px rgba(242,203,5,0.5);
+}
+.endCoupon .cpCode{
+  font-size:20px;letter-spacing:4px;
+  color:#fffbe8;font-weight:bold;
+  margin:4px 0;
+  text-shadow:0 0 12px rgba(242,203,5,0.7);
+}
+.endCoupon .cpDesc{
+  font-size:9px;color:#4ecdc4;letter-spacing:1px;
+  margin-bottom:6px;
+}
+.endCoupon .cpCopy{
+  background:rgba(242,203,5,0.2);
+  border:1px solid #F2CB05;
+  color:#F2CB05;
+  padding:5px 14px;
+  border-radius:6px;
+  font-family:inherit;font-size:10px;font-weight:bold;
+  letter-spacing:1.5px;
+  cursor:pointer;
+}
+.endCoupon .cpCopy:active{transform:scale(0.94)}
+.endCoupon .cpCopy.copied{background:rgba(78,205,196,0.3);border-color:#4ecdc4;color:#4ecdc4}
+
+/* ============================================================
+   SHARE BUTTON
+   ============================================================ */
+.endShare{
+  display:block;width:100%;
+  margin-top:10px;
+  padding:13px;
+  background:linear-gradient(180deg,rgba(37,211,102,0.32),rgba(37,211,102,0.12));
+  color:#fffbe8;
+  border:2px solid rgba(37,211,102,0.65);
+  border-radius:10px;
+  font-family:inherit;font-size:13px;font-weight:bold;letter-spacing:2.5px;
+  cursor:pointer;
+  transition:all 0.2s ease;
+}
+.endShare:active{transform:scale(0.97)}
+.endShare:hover{box-shadow:0 0 18px rgba(37,211,102,0.4)}
 </style>
 </head>
 <body>
@@ -917,9 +1030,28 @@ canvas{
         <div class="value" id="endBest">0</div>
       </div>
     </div>
+    <!-- Email capture (shows when score makes top 5) -->
+    <div class="endCapture" id="endCapture">
+      <div class="capLabel">&#9733; SAVE TO LEADERBOARD &#9733;</div>
+      <div class="capSub">Enter your name &amp; email to claim this score</div>
+      <input type="text" id="capName" placeholder="YOUR NAME" maxlength="20" autocomplete="name">
+      <input type="email" id="capEmail" placeholder="EMAIL@EXAMPLE.COM" maxlength="60" autocomplete="email">
+      <button class="capSubmit" id="capSubmit">SAVE MY SCORE</button>
+      <div class="capSaved" id="capSaved" style="display:none">&#10003; Saved! You'll hear from us.</div>
+    </div>
+
+    <!-- Coupon (only on full victory) -->
+    <div class="endCoupon" id="endCoupon">
+      <div class="cpLabel">&#127881; YOU UNLOCKED A REWARD</div>
+      <div class="cpCode" id="cpCode">PACMAN10</div>
+      <div class="cpDesc">10% OFF on anveshan.farm</div>
+      <button class="cpCopy" id="cpCopy">COPY CODE</button>
+    </div>
+
     <div class="endBoardLabel">TOP SCORES</div>
     <div class="endBoard" id="endBoard"></div>
     <button class="endRetry" id="endRetry">PLAY AGAIN</button>
+    <button class="endShare" id="endShare">&#128241; SHARE SCORE</button>
     <button class="endClaim" id="endClaim">CLAIM YOUR POINTS</button>
   </div>
 </div>
