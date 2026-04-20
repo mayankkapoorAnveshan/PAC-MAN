@@ -846,6 +846,9 @@ export function drawObjectiveProgress(cx: CanvasRenderingContext2D, state: GameS
     : `LEVEL ${state.level} / ${MAX_LEVEL}`;
   cx.fillText(levelLabel, W / 2, y);
 
+
+  // cx.fillText(leveLabel,W/2,y);
+
   cx.restore();
   cx.textAlign = 'left';
 }
