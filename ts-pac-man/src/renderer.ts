@@ -1031,6 +1031,7 @@ export function drawOverlays(cx: CanvasRenderingContext2D, state: GameState): vo
     cx.fillText(bannerTitle, W / 2, H / 2 - 40);
     cx.shadowBlur = 0;
 
+
     cx.fillStyle = COLORS.titleSub;
     cx.font = '11px monospace';
     cx.fillText(unlockingEndless ? 'Survive as long as you can!' : 'Get ready!', W / 2, H / 2 - 20);
