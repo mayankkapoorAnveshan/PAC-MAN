@@ -1,0 +1,20 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "esnext",
+    "bundler",
+    "tsconfig",
+    "vite",
+    "pac",
+    "pacman",
+    "babylonjs",
+    "anveshan",
+    "mayank",
+    "kapoor"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    "dist"
+  ]
+}
