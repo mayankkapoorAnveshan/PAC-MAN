@@ -45,7 +45,7 @@ function initMap(state: GameState): void {
 }
 
 function resetPositions(state: GameState): void {
-  state.px = 10; state.py = 15;
+  state.px = 7; state.py = 15;
   state.dx = 0; state.dy = 0;
   state.ndx = 0; state.ndy = 0;
   // Speed ramp: cow gets slightly faster each level.
@@ -59,7 +59,7 @@ function resetPositions(state: GameState): void {
   state.dead = false; state.deadT = 0;
   state.won = false; state.wonT = 0;
   state.scatterMode = true; state.scatterTimer = 0; state.scatterCycle = 0;
-  state.fruit = { x: 10, y: 13, active: false, timer: 0, points: 100 + state.level * 100 };
+  state.fruit = { x: 7, y: 13, active: false, timer: 0, points: 100 + state.level * 100 };
   state.powerUp = { type: '', x: 0, y: 0, active: false, timer: 0, effectTimer: 0 };
   state.cutscene = false; state.cutsceneT = 0;
   resetSmoothPos();
@@ -86,7 +86,7 @@ export function createInitialState(): GameState {
     map: [],
     totalDots: 0,
     dotsEaten: 0,
-    px: 10, py: 15,
+    px: 7, py: 15,
     dx: 0, dy: 0,
     ndx: 0, ndy: 0,
     spd: 0.1,
@@ -103,7 +103,7 @@ export function createInitialState(): GameState {
     mouth: 0.08, mouthD: 1,
     frightTime: 0, eatCombo: 0,
     scatterMode: true, scatterTimer: 0, scatterCycle: 0,
-    fruit: { x: 10, y: 13, active: false, timer: 0, points: 100 },
+    fruit: { x: 7, y: 13, active: false, timer: 0, points: 100 },
     powerUp: { type: '', x: 0, y: 0, active: false, timer: 0, effectTimer: 0 },
     cutscene: false, cutsceneT: 0,
     ghosts: [],

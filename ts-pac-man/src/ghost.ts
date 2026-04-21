@@ -7,10 +7,13 @@ export function createGhosts(level: number): Ghost[] {
   // Higher levels = shorter delays
   const delayBase = Math.max(30, 120 - level * 15);
   return [
-    { x: 9, y: 7, dx: -1, dy: 0, sp, color: GHOST_COLORS[0], del: 0, dc: 0, eaten: false, dead: false, fr: false, scat: { x: 19, y: 0 } },
-    { x: 11, y: 7, dx: 1, dy: 0, sp, color: GHOST_COLORS[1], del: delayBase, dc: 0, eaten: false, dead: false, fr: false, scat: { x: 2, y: 0 } },
-    { x: 4, y: 5, dx: 0, dy: -1, sp, color: GHOST_COLORS[2], del: delayBase * 2, dc: 0, eaten: false, dead: false, fr: false, scat: { x: 19, y: 20 } },
-    { x: 16, y: 5, dx: 0, dy: 1, sp, color: GHOST_COLORS[3], del: delayBase * 3, dc: 0, eaten: false, dead: false, fr: false, scat: { x: 2, y: 20 } },
+    // Ghosts 0 & 1 start inside the house (rows 9-10, cols 6-8); 2 & 3
+    // start on the upper corridor so they converge from different sides.
+    // Scatter corners are the four inside-wall corners of a 15x25 grid.
+    { x: 6, y: 9, dx: 1, dy: 0, sp, color: GHOST_COLORS[0], del: 0, dc: 0, eaten: false, dead: false, fr: false, scat: { x: 13, y: 1 } },
+    { x: 8, y: 9, dx: -1, dy: 0, sp, color: GHOST_COLORS[1], del: delayBase, dc: 0, eaten: false, dead: false, fr: false, scat: { x: 1, y: 1 } },
+    { x: 3, y: 3, dx: 0, dy: 1, sp, color: GHOST_COLORS[2], del: delayBase * 2, dc: 0, eaten: false, dead: false, fr: false, scat: { x: 13, y: 21 } },
+    { x: 11, y: 3, dx: 0, dy: 1, sp, color: GHOST_COLORS[3], del: delayBase * 3, dc: 0, eaten: false, dead: false, fr: false, scat: { x: 1, y: 21 } },
   ];
 }
 

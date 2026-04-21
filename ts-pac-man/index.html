@@ -543,18 +543,17 @@ canvas{
 @media(max-width:600px),(pointer:coarse){
   /* Center content vertically so any leftover space splits evenly */
   body{justify-content:center;padding-top:4px;padding-bottom:4px}
-  /* Compact header: smaller title, no tagline, tight margin */
-  #hdr{margin-bottom:1px}
-  #hdr h1{font-size:16px;letter-spacing:2.5px}
-  #hdr .s{display:none}
-  #hdr .mascot,#hdr .drop{font-size:18px}
-  #streakBadge{top:2px;padding:2px 6px;font-size:8px}
+  /* Nuke brand row + tagline on mobile — every pixel goes to canvas.
+     Keep streak badge (high retention signal). */
+  #hdr{margin-bottom:0}
+  #hdr .brand,#hdr .s{display:none}
+  #streakBadge{margin:2px auto 0;padding:2px 8px;font-size:8px}
   #streakBadge .fire{font-size:10px}
   /* Compact HUD: thin padding, small labels */
   #hud{padding:2px 6px;font-size:11px;gap:4px}
   #hud .l{font-size:7px}
   #hud .hudLives #lives{font-size:12px}
-  /* Show top leaderboard panel only on mobile (fills empty upper space) */
+  /* Top leaderboard panel stays (collapsed default) — tap to expand */
   #topBoard{display:block}
   /* Disable unnecessary elements */
   #dpad{display:none!important}

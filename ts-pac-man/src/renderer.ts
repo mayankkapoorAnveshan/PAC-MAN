@@ -73,7 +73,7 @@ export function drawMap(cx: CanvasRenderingContext2D, state: GameState): void {
 // more visible when cornering snaps occur; lower = buttery smooth but can
 // look floaty. 0.65 is the sweet spot — hides the ~0.2-tile cornering
 // assist snap almost completely while staying responsive to input.
-let smoothPX = 10, smoothPY = 15;
+let smoothPX = 7, smoothPY = 15;
 const LERP = 0.65;
 
 export function drawPacMan(cx: CanvasRenderingContext2D, state: GameState): void {
@@ -99,7 +99,7 @@ export function drawPacMan(cx: CanvasRenderingContext2D, state: GameState): void
 }
 
 export function resetSmoothPos(): void {
-  smoothPX = 10; smoothPY = 15;
+  smoothPX = 7; smoothPY = 15;
 }
 
 export function setSmoothPos(x: number, y: number): void {
@@ -831,7 +831,9 @@ export function drawObjectiveProgress(cx: CanvasRenderingContext2D, state: GameS
   const honeyDone = honey >= state.honeyTarget;
   const killsDone = kills >= state.killsTarget;
 
-  const y = 21 * T + 18;
+  // HUD lives in the 2 empty rows below the bottom wall (rows ROWS-2 and
+  // ROWS-1). Text baseline sits 18px into that band.
+  const y = (ROWS - 2) * T + 18;
   cx.save();
   cx.font = 'bold 14px monospace';
   cx.textAlign = 'center';
