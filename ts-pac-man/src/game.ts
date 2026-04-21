@@ -316,7 +316,7 @@ export function gameLoop(
           state.eatCombo = 0;
           state.frightTime = Math.max(50, 150 - state.level * 20);
           for (const g of state.ghosts) {
-            if (!g.eaten) g.fr = true;
+            if (!g.eaten && !g.dead) g.fr = true;
           }
         }
 
@@ -391,10 +391,12 @@ export function gameLoop(
 
       // Collision
       for (const g of state.ghosts) {
+        if (g.dead) continue;
         if (g.dc < g.del) continue;
         if (Math.hypot(state.px - g.x, state.py - g.y) < 0.8) {
           if (g.fr && !g.eaten) {
-            g.eaten = true;
+            // Cow eats a frightened enemy — permanent kill, no regeneration.
+            g.dead = true;
             g.fr = false;
             state.eatCombo++;
             state.ghostKills++;
@@ -416,9 +418,12 @@ export function gameLoop(
               playComboVoice(tier);
               triggerShake(15, 4);
             }
-          } else if (!g.eaten) {
+          } else if (!g.eaten && state.invulnTimer <= 0) {
             // Death: play animation, then the death timer below handles
             // respawn-at-death-location (or game over if lives run out).
+            // Skipped during invulnerability — the blink is only cosmetic
+            // without this guard, so the cow would die again instantly on
+            // respawn if a ghost was adjacent.
             playDeath();
             triggerShake(30, 8);
             spawnDeathExplosion(state.px * T + T / 2, state.py * T + T / 2);
@@ -448,23 +453,16 @@ export function gameLoop(
           state.goT = 0;
           addScore(state.score, state.level);
         } else {
-          // Respawn AT death location (not spawn tile) for engagement.
-          // Ghosts still reset to their house so the player has breathing room.
-          // Mission progress (honeyPotsEaten, ghostKills, score) preserved.
-          //
-          // Round to nearest tile so the cow respawns grid-aligned —
-          // otherwise the direction-change logic (which only triggers at tile
-          // alignment) can't fire, leaving the cow stuck with dx=dy=0.
-          const respawnX = Math.round(state.px);
-          const respawnY = Math.round(state.py);
-          const savedHoney = state.honeyPotsEaten;
-          const savedKills = state.ghostKills;
-          resetPositions(state);
-          state.px = respawnX;
-          state.py = respawnY;
-          setSmoothPos(respawnX, respawnY);
-          state.honeyPotsEaten = savedHoney;
-          state.ghostKills = savedKills;
+          // Only the cow regenerates — ghosts keep their positions and
+          // alive/dead state, fright mode / powerups / fruit all keep ticking.
+          // Tile-round the death position so direction-change logic (which
+          // only triggers at tile alignment) can fire; otherwise the cow
+          // would be frozen with dx=dy=0 at a non-aligned float position.
+          state.px = Math.round(state.px);
+          state.py = Math.round(state.py);
+          state.dx = 0; state.dy = 0;
+          state.ndx = 0; state.ndy = 0;
+          setSmoothPos(state.px, state.py);
           state.invulnTimer = 90; // ~1.5s safe window
         }
       }

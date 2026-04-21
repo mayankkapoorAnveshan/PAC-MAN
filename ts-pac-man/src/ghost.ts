@@ -7,14 +7,15 @@ export function createGhosts(level: number): Ghost[] {
   // Higher levels = shorter delays
   const delayBase = Math.max(30, 120 - level * 15);
   return [
-    { x: 9, y: 7, dx: -1, dy: 0, sp, color: GHOST_COLORS[0], del: 0, dc: 0, eaten: false, fr: false, scat: { x: 19, y: 0 } },
-    { x: 11, y: 7, dx: 1, dy: 0, sp, color: GHOST_COLORS[1], del: delayBase, dc: 0, eaten: false, fr: false, scat: { x: 2, y: 0 } },
-    { x: 4, y: 5, dx: 0, dy: -1, sp, color: GHOST_COLORS[2], del: delayBase * 2, dc: 0, eaten: false, fr: false, scat: { x: 19, y: 20 } },
-    { x: 16, y: 5, dx: 0, dy: 1, sp, color: GHOST_COLORS[3], del: delayBase * 3, dc: 0, eaten: false, fr: false, scat: { x: 2, y: 20 } },
+    { x: 9, y: 7, dx: -1, dy: 0, sp, color: GHOST_COLORS[0], del: 0, dc: 0, eaten: false, dead: false, fr: false, scat: { x: 19, y: 0 } },
+    { x: 11, y: 7, dx: 1, dy: 0, sp, color: GHOST_COLORS[1], del: delayBase, dc: 0, eaten: false, dead: false, fr: false, scat: { x: 2, y: 0 } },
+    { x: 4, y: 5, dx: 0, dy: -1, sp, color: GHOST_COLORS[2], del: delayBase * 2, dc: 0, eaten: false, dead: false, fr: false, scat: { x: 19, y: 20 } },
+    { x: 16, y: 5, dx: 0, dy: 1, sp, color: GHOST_COLORS[3], del: delayBase * 3, dc: 0, eaten: false, dead: false, fr: false, scat: { x: 2, y: 20 } },
   ];
 }
 
 export function moveGhost(g: Ghost, idx: number, state: GameState): void {
+  if (g.dead) return;
   if (g.dc < g.del) { g.dc++; return; }
 
   const s = g.eaten ? 0.1 : (g.fr ? 0.035 : g.sp);

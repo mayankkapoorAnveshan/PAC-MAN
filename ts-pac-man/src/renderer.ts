@@ -542,6 +542,7 @@ export function drawDeadPacMan(cx: CanvasRenderingContext2D, state: GameState): 
 // ============================================================
 
 export function drawGhost(cx: CanvasRenderingContext2D, g: Ghost, frightTime: number, idx: number, frame: number): void {
+  if (g.dead) return;
   const gx = g.x * T + T / 2;
   const gy = g.y * T + T / 2;
 

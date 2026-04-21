@@ -8,6 +8,7 @@ export interface Ghost {
   del: number;
   dc: number;
   eaten: boolean;
+  dead: boolean;
   fr: boolean;
   scat: { x: number; y: number };
 }
