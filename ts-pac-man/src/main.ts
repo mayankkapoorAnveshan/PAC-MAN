@@ -140,6 +140,80 @@ function escapeHtml(s: string): string {
 renderLeaderboardPanel();
 
 // ============================================================
+// TOP SCORES — tap-to-expand on mobile (collapsed by default to
+// reclaim vertical real estate the old always-on bar was wasting)
+// ============================================================
+const tbToggle = document.getElementById('tbToggle') as HTMLButtonElement | null;
+if (tbToggle && topBoard) {
+  tbToggle.addEventListener('click', () => {
+    const nowCollapsed = topBoard.classList.toggle('collapsed');
+    tbToggle.setAttribute('aria-expanded', String(!nowCollapsed));
+  });
+}
+
+// ============================================================
+// DAILY STREAK — counts consecutive days the player opened the
+// game. Resets if a day is skipped. Drives the 🔥 badge in header.
+// ============================================================
+(function updateDailyStreak(): void {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD in UTC
+  const last = localStorage.getItem('anveshan_last_play');
+  let streak = parseInt(localStorage.getItem('anveshan_streak') || '0', 10) || 0;
+  if (last === today) {
+    if (streak < 1) streak = 1;
+  } else if (last) {
+    const diffDays = Math.round(
+      (Date.parse(today) - Date.parse(last)) / 86_400_000,
+    );
+    streak = diffDays === 1 ? streak + 1 : 1;
+  } else {
+    streak = 1;
+  }
+  localStorage.setItem('anveshan_last_play', today);
+  localStorage.setItem('anveshan_streak', String(streak));
+  const badge = document.getElementById('streakBadge');
+  const count = document.getElementById('streakCount');
+  if (badge && count && streak >= 1) {
+    count.textContent = String(streak);
+    badge.hidden = false;
+  }
+})();
+
+// ============================================================
+// SWIPE HINT — first-time-only mobile onboarding. Non-touch
+// devices get the hint suppressed silently. Auto-dismisses on
+// first touch or after 4s.
+// ============================================================
+(function showSwipeHintOnce(): void {
+  if (localStorage.getItem('anveshan_swipe_seen')) return;
+  if (!window.matchMedia('(pointer:coarse)').matches) {
+    localStorage.setItem('anveshan_swipe_seen', '1');
+    return;
+  }
+  const hint = document.getElementById('swipeHint');
+  if (!hint) return;
+  const markSeen = () => localStorage.setItem('anveshan_swipe_seen', '1');
+  const hide = (): void => {
+    hint.classList.remove('show');
+    hint.classList.add('hide');
+    setTimeout(() => hint.classList.remove('hide'), 500);
+    markSeen();
+  };
+  setTimeout(() => {
+    hint.classList.add('show');
+    const auto = window.setTimeout(hide, 4000);
+    const dismiss = (): void => {
+      clearTimeout(auto);
+      hide();
+      window.removeEventListener('touchstart', dismiss);
+      window.removeEventListener('keydown', dismiss);
+    };
+    window.addEventListener('touchstart', dismiss, { once: true, passive: true });
+    window.addEventListener('keydown', dismiss, { once: true });
+  }, 900);
+})();
+
+// ============================================================
 // END GAME MODAL — victory / game over popup
 // ============================================================
 const endModal = document.getElementById('endModal') as HTMLElement | null;
@@ -305,15 +379,106 @@ function doCopyCoupon(): void {
 cpCopy?.addEventListener('click', doCopyCoupon);
 cpCopy?.addEventListener('touchstart', (e) => { e.preventDefault(); doCopyCoupon(); }, { passive: false });
 
-// ----- Share score (Web Share API + WhatsApp fallback) -----
-function doShare(): void {
+// ----- Shareable score card — generates an Instagram-ready 1080x1080
+//       PNG with the player's score, level, and Anveshan branding.
+//       Falls back to text-only share if the platform doesn't accept
+//       files (e.g. desktop browsers, older iOS).
+function buildScoreCard(score: number, level: number): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    const S = 1080;
+    const canvas = document.createElement('canvas');
+    canvas.width = S; canvas.height = S;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) { resolve(null); return; }
+
+    // Background — brand dark-teal gradient
+    const bg = ctx.createLinearGradient(0, 0, S, S);
+    bg.addColorStop(0, '#012a24');
+    bg.addColorStop(1, '#00584b');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, S, S);
+
+    // Golden inner frame
+    ctx.strokeStyle = '#f2cb05';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(40, 40, S - 80, S - 80);
+    ctx.strokeStyle = 'rgba(78,205,196,0.4)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(60, 60, S - 120, S - 120);
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+
+    // Brand title
+    ctx.shadowColor = 'rgba(242,203,5,0.6)';
+    ctx.shadowBlur = 24;
+    ctx.fillStyle = '#f2cb05';
+    ctx.font = 'bold 96px "Courier New", monospace';
+    ctx.fillText('ANVESHAN', S / 2, 190);
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = '#4ecdc4';
+    ctx.font = 'italic 28px "Courier New", monospace';
+    ctx.fillText('ONE STEP CLOSER TO PURITY', S / 2, 235);
+
+    // Mascot — big cow emoji (renders natively on most platforms)
+    ctx.font = '260px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    ctx.fillText('\u{1F404}', S / 2, 520);
+
+    // "I SCORED"
+    ctx.fillStyle = '#fffbe8';
+    ctx.font = 'bold 44px "Courier New", monospace';
+    ctx.fillText('I SCORED', S / 2, 620);
+
+    // Big score number
+    ctx.shadowColor = 'rgba(242,203,5,0.8)';
+    ctx.shadowBlur = 30;
+    ctx.fillStyle = '#f2cb05';
+    ctx.font = 'bold 190px "Courier New", monospace';
+    ctx.fillText(String(score), S / 2, 790);
+    ctx.shadowBlur = 0;
+
+    // Level chip
+    ctx.fillStyle = '#4ecdc4';
+    ctx.font = 'bold 40px "Courier New", monospace';
+    ctx.fillText(`LEVEL ${level}`, S / 2, 850);
+
+    // CTA
+    ctx.fillStyle = '#e74c3c';
+    ctx.font = 'bold 40px "Courier New", monospace';
+    ctx.fillText('CAN YOU BEAT ME?', S / 2, 950);
+
+    ctx.fillStyle = '#7ab8a8';
+    ctx.font = '26px "Courier New", monospace';
+    ctx.fillText('anveshan.farm', S / 2, 1000);
+
+    canvas.toBlob((b) => resolve(b), 'image/png');
+  });
+}
+
+async function doShare(): Promise<void> {
   const score = state.score;
   const level = state.level;
   const url = 'https://anveshan.farm/?utm_source=pacman&utm_medium=share';
-  const text = `\u{1F420} I scored ${score} on Anveshan Pac-Man (Level ${level})! Beat me \u{1F449} ${url}`;
-  const shareData = { title: 'Anveshan Pac-Man', text, url };
+  const text = `\u{1F404} I scored ${score} on Anveshan Pac-Man (Level ${level})! Beat me \u{1F449} ${url}`;
+
+  // Try image share first (mobile native sheet)
+  try {
+    const blob = await buildScoreCard(score, level);
+    if (blob) {
+      const file = new File([blob], 'anveshan-score.png', { type: 'image/png' });
+      const canShareFile = typeof navigator.canShare === 'function'
+        && navigator.canShare({ files: [file] });
+      if (canShareFile && navigator.share) {
+        await navigator.share({ title: 'Anveshan Pac-Man', text, url, files: [file] });
+        return;
+      }
+    }
+  } catch { /* fall through to text share */ }
+
+  // Fallback: text-only share (desktop + older mobile)
   if (navigator.share) {
-    navigator.share(shareData).catch(() => { /* user dismissed */ });
+    navigator.share({ title: 'Anveshan Pac-Man', text, url }).catch(() => { /* dismissed */ });
   } else {
     const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(wa, '_blank');

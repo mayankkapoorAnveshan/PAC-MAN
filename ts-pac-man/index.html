@@ -29,11 +29,24 @@ body{
   padding-right:env(safe-area-inset-right);
   justify-content:center;
 }
-#hdr{text-align:center;margin-bottom:4px;flex-shrink:0}
-#hdr h1{color:#f2cb05;font-size:clamp(14px,4vw,22px);letter-spacing:clamp(2px,1vw,4px);text-shadow:0 0 10px rgba(242,203,5,0.6)}
-#hdr .s{color:#4ecdc4;font-size:clamp(6px,1.8vw,10px);margin-top:2px;letter-spacing:clamp(1px,0.5vw,3px)}
-#hud{display:flex;justify-content:space-between;width:min(95vw,588px);padding:4px 8px;color:#fffbe8;font-size:clamp(9px,2.4vw,13px);font-weight:bold;flex-shrink:0}
+#hdr{text-align:center;margin-bottom:4px;flex-shrink:0;position:relative}
+#hdr .brand{display:flex;align-items:center;justify-content:center;gap:clamp(6px,2vw,12px)}
+#hdr .mascot,#hdr .drop{font-size:clamp(16px,4.4vw,22px);filter:drop-shadow(0 0 6px rgba(242,203,5,0.5));display:inline-block}
+#hdr .mascot{animation:mascotBob 2.4s ease-in-out infinite}
+#hdr .drop{animation:dropBob 2.4s ease-in-out infinite;animation-delay:1.2s}
+@keyframes mascotBob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-3px) rotate(4deg)}}
+@keyframes dropBob{0%,100%{transform:translateY(0) rotate(6deg)}50%{transform:translateY(-3px) rotate(-6deg)}}
+#hdr h1{color:#f2cb05;font-size:clamp(16px,5vw,26px);letter-spacing:clamp(2px,1.2vw,5px);text-shadow:0 0 10px rgba(242,203,5,0.6),0 0 20px rgba(242,203,5,0.25);font-weight:900}
+#hdr .s{color:#4ecdc4;font-size:clamp(7px,1.9vw,11px);margin-top:3px;letter-spacing:clamp(1px,0.6vw,3px);font-style:italic}
+#streakBadge{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(242,80,45,0.2),rgba(242,120,5,0.15));border:1px solid rgba(242,120,5,0.6);border-radius:12px;padding:3px 10px;color:#f28a2d;font-size:clamp(8px,2vw,10px);font-weight:bold;letter-spacing:1px;box-shadow:0 0 8px rgba(242,120,5,0.3);animation:streakPulse 2s ease-in-out infinite;margin-top:4px}
+#streakBadge[hidden]{display:none}
+#streakBadge .fire{font-size:clamp(10px,2.5vw,14px)}
+@keyframes streakPulse{0%,100%{box-shadow:0 0 8px rgba(242,120,5,0.3)}50%{box-shadow:0 0 14px rgba(242,120,5,0.55)}}
+#hud{display:flex;justify-content:space-between;width:min(95vw,588px);padding:4px 8px;color:#fffbe8;font-size:clamp(9px,2.4vw,13px);font-weight:bold;flex-shrink:0;gap:6px}
+#hud>div{min-width:0;text-align:center}
 #hud .l{color:#7ab8a8;font-size:clamp(6px,1.6vw,8px);letter-spacing:1px;text-shadow:0 0 6px rgba(78,205,196,0.5)}
+#hud .hudLives #lives{font-size:clamp(10px,2.6vw,14px);line-height:1;white-space:nowrap}
+#hud .hudLives #lives span{margin:0 !important;font-size:inherit !important}
 #sc,#hi,#lv{text-shadow:0 0 8px rgba(242,203,5,0.8),0 0 14px rgba(242,203,5,0.4);letter-spacing:1px;transition:transform 0.15s ease-out;display:inline-block}
 #sc.pulse,#hi.pulse{animation:scorePulse 0.3s ease-out}
 @keyframes scorePulse{0%{transform:scale(1)}50%{transform:scale(1.2);color:#fff}100%{transform:scale(1)}}
@@ -49,6 +62,7 @@ canvas{
   max-height:100%;
 }
 #bottomUI{display:flex;align-items:center;gap:15px;margin-top:4px;flex-shrink:0}
+#bottomUI:empty{display:none}
 #lives{color:#f2cb05;font-size:clamp(12px,3vw,16px)}
 #startBtn{display:none;margin:6px auto;padding:14px 36px;background:rgba(242,203,5,0.2);border:2px solid #f2cb05;border-radius:12px;color:#f2cb05;font-size:16px;font-family:monospace;font-weight:bold;letter-spacing:2px;cursor:pointer;touch-action:manipulation;animation:pulseBtn 1.5s ease-in-out infinite;min-width:44px;min-height:44px}
 @keyframes pulseBtn{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.7;transform:scale(0.97)}}
@@ -61,17 +75,17 @@ canvas{
   z-index:100;
   background:rgba(0,88,75,0.85);
   border:2px solid #4ecdc4;
-  border-radius:10px;
+  border-radius:12px;
   color:#f2cb05;
-  font-size:11px;
+  font-size:12px;
   font-family:monospace;
   font-weight:bold;
-  padding:8px 14px;
+  padding:10px 16px;
   cursor:pointer;
   letter-spacing:1.5px;
   touch-action:manipulation;
-  min-width:48px;
-  min-height:40px;
+  min-width:56px;
+  min-height:48px;
   box-shadow:0 2px 8px rgba(0,0,0,0.4),0 0 12px rgba(78,205,196,0.3);
   text-shadow:0 0 4px rgba(242,203,5,0.5);
 }
@@ -86,13 +100,13 @@ canvas{
   top:max(env(safe-area-inset-top),8px);
   left:max(env(safe-area-inset-left),10px);
   z-index:100;
-  width:40px;
-  height:40px;
+  width:48px;
+  height:48px;
   background:rgba(0,88,75,0.85);
   border:2px solid #4ecdc4;
   border-radius:50%;
   color:#f2cb05;
-  font-size:20px;
+  font-size:22px;
   font-family:monospace;
   font-weight:bold;
   cursor:pointer;
@@ -385,38 +399,63 @@ canvas{
   display:none;
   width:min(95vw,588px);
   margin:2px auto;
-  padding:4px 10px;
+  padding:0;
   background:linear-gradient(to bottom,rgba(0,88,75,0.35),rgba(0,88,75,0.15));
   border:1px solid rgba(78,205,196,0.35);
-  border-radius:8px;
+  border-radius:10px;
   box-shadow:0 0 12px rgba(78,205,196,0.15);
   flex-shrink:0;
+  overflow:hidden;
 }
 #topBoard .tbTitle{
-  text-align:center;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  background:transparent;
+  border:0;
   color:#f2cb05;
   font-family:monospace;
-  font-size:8px;
+  font-size:10px;
   font-weight:bold;
   letter-spacing:2px;
   text-shadow:0 0 6px rgba(242,203,5,0.5);
-  margin-bottom:2px;
+  padding:8px 10px;
+  min-height:32px;
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
 }
+#topBoard .tbTitle:active{background:rgba(78,205,196,0.1)}
+#topBoard .tbTitle .tbCaret{
+  display:inline-block;
+  transition:transform 0.25s ease;
+  color:#4ecdc4;
+  font-size:11px;
+}
+#topBoard.collapsed .tbTitle .tbCaret{transform:rotate(-90deg)}
 #topBoard .tbList{
   display:flex;
   justify-content:space-around;
   gap:6px;
   flex-wrap:wrap;
+  padding:0 10px 8px;
+  max-height:200px;
+  transition:max-height 0.3s ease,padding 0.3s ease,opacity 0.25s ease;
+  opacity:1;
 }
+#topBoard.collapsed .tbList{max-height:0;padding:0 10px;opacity:0;overflow:hidden}
 #topBoard .tbEntry{
   color:#fffbe8;
   font-family:monospace;
-  font-size:9px;
+  font-size:10px;
   white-space:nowrap;
 }
 #topBoard .tbEntry.rank1{color:#FFD700;text-shadow:0 0 6px rgba(255,215,0,0.6)}
 #topBoard .tbEntry .rank{color:#4ecdc4;font-weight:bold;margin-right:2px}
-#topBoard.empty .tbList{justify-content:center;color:#4ecdc4;font-size:9px;font-style:italic;opacity:0.7}
+#topBoard.empty .tbList{justify-content:center;color:#4ecdc4;font-size:10px;font-style:italic;opacity:0.7}
+#topBoard.empty.collapsed .tbList{opacity:0}
 
 /* ============================================================
    FIRST-TIME SWIPE HINT OVERLAY
@@ -506,16 +545,17 @@ canvas{
   body{justify-content:center;padding-top:4px;padding-bottom:4px}
   /* Compact header: smaller title, no tagline, tight margin */
   #hdr{margin-bottom:1px}
-  #hdr h1{font-size:13px;letter-spacing:2px}
+  #hdr h1{font-size:16px;letter-spacing:2.5px}
   #hdr .s{display:none}
+  #hdr .mascot,#hdr .drop{font-size:18px}
+  #streakBadge{top:2px;padding:2px 6px;font-size:8px}
+  #streakBadge .fire{font-size:10px}
   /* Compact HUD: thin padding, small labels */
-  #hud{padding:1px 6px;font-size:10px}
-  #hud .l{font-size:6px}
+  #hud{padding:2px 6px;font-size:11px;gap:4px}
+  #hud .l{font-size:7px}
+  #hud .hudLives #lives{font-size:12px}
   /* Show top leaderboard panel only on mobile (fills empty upper space) */
   #topBoard{display:block}
-  /* Lives row compact */
-  #bottomUI{margin-top:2px;gap:8px}
-  #lives{font-size:11px}
   /* Disable unnecessary elements */
   #dpad{display:none!important}
   #startBtn{display:block}
@@ -826,24 +866,38 @@ canvas{
 </style>
 </head>
 <body>
-<div id="hdr"><h1>ANVESHAN</h1><div class="s">ONE STEP CLOSER TO PURITY</div></div>
+<div id="hdr">
+  <div class="brand">
+    <span class="mascot" aria-hidden="true">&#x1F404;</span>
+    <h1>ANVESHAN</h1>
+    <span class="drop" aria-hidden="true">&#x1F36F;</span>
+  </div>
+  <div class="s">ONE STEP CLOSER TO PURITY</div>
+  <div id="streakBadge" class="streakBadge" hidden>
+    <span class="fire" aria-hidden="true">&#x1F525;</span>
+    <span class="streakText"><span id="streakCount">1</span>-DAY STREAK</span>
+  </div>
+</div>
 <div id="hud">
   <div><div class="l">SCORE</div><div id="sc">0</div></div>
   <div><div class="l">HIGH</div><div id="hi">0</div></div>
   <div><div class="l">LEVEL</div><div id="lv">1</div></div>
+  <div class="hudLives"><div class="l">LIVES</div><div id="lives"></div></div>
 </div>
-<!-- Top leaderboard panel — fills vacant upper space on mobile -->
-<div id="topBoard">
-  <div class="tbTitle">&#9733; TOP SCORES &#9733;</div>
+<!-- Top leaderboard panel — collapsible, tap the title to expand -->
+<div id="topBoard" class="collapsed">
+  <button class="tbTitle" id="tbToggle" aria-expanded="false" aria-controls="tbList" type="button">
+    <span class="tbStar">&#9733;</span>
+    <span class="tbTitleText">TOP SCORES</span>
+    <span class="tbCaret" aria-hidden="true">&#9662;</span>
+  </button>
   <div class="tbList" id="tbList"></div>
 </div>
 <button id="helpBtn" aria-label="How to play">?</button>
 <button id="pauseBtn">PAUSE</button>
 <canvas id="cv"></canvas>
 <button id="startBtn">TAP TO START</button>
-<div id="bottomUI">
-  <div id="lives"></div>
-</div>
+<div id="bottomUI"></div>
 <div id="dpad">
   <div class="db" id="bu">&#9650;</div><div class="db" id="bd">&#9660;</div>
   <div class="db" id="bl">&#9664;</div><div class="db" id="br">&#9654;</div>
