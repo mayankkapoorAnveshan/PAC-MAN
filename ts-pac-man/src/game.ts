@@ -451,14 +451,18 @@ export function gameLoop(
           // Respawn AT death location (not spawn tile) for engagement.
           // Ghosts still reset to their house so the player has breathing room.
           // Mission progress (honeyPotsEaten, ghostKills, score) preserved.
-          const savedPx = state.px;
-          const savedPy = state.py;
+          //
+          // Round to nearest tile so the cow respawns grid-aligned —
+          // otherwise the direction-change logic (which only triggers at tile
+          // alignment) can't fire, leaving the cow stuck with dx=dy=0.
+          const respawnX = Math.round(state.px);
+          const respawnY = Math.round(state.py);
           const savedHoney = state.honeyPotsEaten;
           const savedKills = state.ghostKills;
           resetPositions(state);
-          state.px = savedPx;
-          state.py = savedPy;
-          setSmoothPos(savedPx, savedPy);
+          state.px = respawnX;
+          state.py = respawnY;
+          setSmoothPos(respawnX, respawnY);
           state.honeyPotsEaten = savedHoney;
           state.ghostKills = savedKills;
           state.invulnTimer = 90; // ~1.5s safe window
