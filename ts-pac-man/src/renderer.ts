@@ -102,6 +102,10 @@ export function resetSmoothPos(): void {
   smoothPX = 10; smoothPY = 15;
 }
 
+export function setSmoothPos(x: number, y: number): void {
+  smoothPX = x; smoothPY = y;
+}
+
 
 // ============================================================
 // SMOOTH COW - Canvas curves (no pixel art)

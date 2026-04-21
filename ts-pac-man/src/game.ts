@@ -1,7 +1,7 @@
 import { GameState } from './types';
 import { COLS, ROWS, T, W, H, getMapForLevel, LEVEL_OBJECTIVES, MAX_LEVEL, getLevelTheme } from './constants';
 import { createGhosts, moveGhost } from './ghost';
-import { drawMap, drawPacMan, drawDeadPacMan, drawGhost, drawFruit, drawPowerUp, drawPowerUpIndicator, drawOverlays, drawLivesEmoji, resetSmoothPos, drawObjectiveProgress } from './renderer';
+import { drawMap, drawPacMan, drawDeadPacMan, drawGhost, drawFruit, drawPowerUp, drawPowerUpIndicator, drawOverlays, drawLivesEmoji, resetSmoothPos, setSmoothPos, drawObjectiveProgress } from './renderer';
 import { playEatDot, playEatGhee, playEatGhost, playDeath, playLevelComplete, playFruitEat, playComboChime, playComboVoice } from './sound';
 import { triggerShake, applyShake, resetShake, spawnDotParticles, spawnGhostExplosion, spawnPowerUpBurst, spawnScorePopup, spawnDeathExplosion, updateAndDrawParticles, updateAndDrawPopups, triggerFlash, drawScreenFlash, haptic, spawnComboBanner, updateAndDrawComboBanner } from './effects';
 import { addScore } from './leaderboard';
@@ -92,7 +92,7 @@ export function createInitialState(): GameState {
     spd: 0.1,
     score: 0,
     hi: parseInt(localStorage.getItem('pac_hi') || '0'),
-    lives: 1,
+    lives: 3,
     level: 1,
     frame: 0,
     started: false,
@@ -124,7 +124,7 @@ export function doStart(state: GameState, lvE: HTMLElement, livE: HTMLElement): 
   state.gameComplete = false;
   state.endlessMode = false;
   state.score = 0;
-  state.lives = 1;
+  state.lives = 3;
   state.invulnTimer = 0;
   state.level = 1;
   drawLives(state, livE);
@@ -143,7 +143,7 @@ export function doRestart(state: GameState, lvE: HTMLElement, livE: HTMLElement)
   state.endlessMode = false;
   state.goT = 0;
   state.score = 0;
-  state.lives = 1;
+  state.lives = 3;
   state.invulnTimer = 0;
   state.level = retryLevel;
   drawLives(state, livE);
@@ -417,17 +417,15 @@ export function gameLoop(
               triggerShake(15, 4);
             }
           } else if (!g.eaten) {
-            // Instant game over — one collision ends the run and pops the modal.
+            // Death: play animation, then the death timer below handles
+            // respawn-at-death-location (or game over if lives run out).
             playDeath();
             triggerShake(30, 8);
             spawnDeathExplosion(state.px * T + T / 2, state.py * T + T / 2);
             triggerFlash('#e74c3c', 0.55);
             haptic(80);
-            state.lives = 0;
-            drawLives(state, livE);
-            state.gameover = true;
-            state.goT = 0;
-            addScore(state.score, state.level);
+            state.dead = true;
+            state.deadT = 50;
           }
         }
       }
@@ -450,11 +448,17 @@ export function gameLoop(
           state.goT = 0;
           addScore(state.score, state.level);
         } else {
-          // Respawn at spawn tile WITHOUT touching mission progress
-          // (honeyPotsEaten, ghostKills, score all preserved)
+          // Respawn AT death location (not spawn tile) for engagement.
+          // Ghosts still reset to their house so the player has breathing room.
+          // Mission progress (honeyPotsEaten, ghostKills, score) preserved.
+          const savedPx = state.px;
+          const savedPy = state.py;
           const savedHoney = state.honeyPotsEaten;
           const savedKills = state.ghostKills;
           resetPositions(state);
+          state.px = savedPx;
+          state.py = savedPy;
+          setSmoothPos(savedPx, savedPy);
           state.honeyPotsEaten = savedHoney;
           state.ghostKills = savedKills;
           state.invulnTimer = 90; // ~1.5s safe window
