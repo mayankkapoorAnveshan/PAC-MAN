@@ -8,6 +8,7 @@
     "noUnusedParameters": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "rootDir": "src",
     "outDir": "dist",
     "sourceMap": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
