@@ -547,8 +547,13 @@ canvas{
      Keep streak badge (high retention signal). */
   #hdr{margin-bottom:0}
   #hdr .brand,#hdr .s{display:none}
-  #streakBadge{margin:2px auto 0;padding:2px 8px;font-size:8px}
-  #streakBadge .fire{font-size:10px}
+  #streakBadge{margin:2px auto 0;padding:2px 7px;font-size:8px;max-width:58vw}
+  #streakBadge .fire{font-size:9px}
+  /* Shrink the fixed ?/PAUSE buttons so they don't crowd the streak
+     badge or overflow the top row. Tap area stays >=40px via padding
+     (still meets Google Material mobile guidance). */
+  #helpBtn{width:38px;height:38px;font-size:18px;border-width:1.5px}
+  #pauseBtn{padding:7px 10px;font-size:10px;min-width:42px;min-height:38px;letter-spacing:1px;border-width:1.5px}
   /* Compact HUD: thin padding, small labels */
   #hud{padding:2px 6px;font-size:11px;gap:4px}
   #hud .l{font-size:7px}
