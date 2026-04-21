@@ -38,7 +38,7 @@ body{
 @keyframes dropBob{0%,100%{transform:translateY(0) rotate(6deg)}50%{transform:translateY(-3px) rotate(-6deg)}}
 #hdr h1{color:#f2cb05;font-size:clamp(16px,5vw,26px);letter-spacing:clamp(2px,1.2vw,5px);text-shadow:0 0 10px rgba(242,203,5,0.6),0 0 20px rgba(242,203,5,0.25);font-weight:900}
 #hdr .s{color:#4ecdc4;font-size:clamp(7px,1.9vw,11px);margin-top:3px;letter-spacing:clamp(1px,0.6vw,3px);font-style:italic}
-#streakBadge{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(242,80,45,0.2),rgba(242,120,5,0.15));border:1px solid rgba(242,120,5,0.6);border-radius:12px;padding:3px 10px;color:#f28a2d;font-size:clamp(8px,2vw,10px);font-weight:bold;letter-spacing:1px;box-shadow:0 0 8px rgba(242,120,5,0.3);animation:streakPulse 2s ease-in-out infinite;margin-top:4px}
+#streakBadge{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(242,80,45,0.2),rgba(242,120,5,0.15));border:1px solid rgba(242,120,5,0.6);border-radius:12px;padding:3px 10px;color:#f28a2d;font-size:clamp(8px,2vw,10px);font-weight:bold;letter-spacing:1px;box-shadow:0 0 8px rgba(242,120,5,0.3);animation:streakPulse 2s ease-in-out infinite;margin:2px auto 4px;align-self:center;flex-shrink:0}
 #streakBadge[hidden]{display:none}
 #streakBadge .fire{font-size:clamp(10px,2.5vw,14px)}
 @keyframes streakPulse{0%,100%{box-shadow:0 0 8px rgba(242,120,5,0.3)}50%{box-shadow:0 0 14px rgba(242,120,5,0.55)}}
@@ -872,10 +872,10 @@ canvas{
     <span class="drop" aria-hidden="true">&#x1F36F;</span>
   </div>
   <div class="s">ONE STEP CLOSER TO PURITY</div>
-  <div id="streakBadge" class="streakBadge" hidden>
-    <span class="fire" aria-hidden="true">&#x1F525;</span>
-    <span class="streakText"><span id="streakCount">1</span>-DAY STREAK</span>
-  </div>
+</div>
+<div id="streakBadge" class="streakBadge" hidden>
+  <span class="fire" aria-hidden="true">&#x1F525;</span>
+  <span class="streakText"><span id="streakCount">1</span>-DAY STREAK</span>
 </div>
 <div id="hud">
   <div><div class="l">SCORE</div><div id="sc">0</div></div>

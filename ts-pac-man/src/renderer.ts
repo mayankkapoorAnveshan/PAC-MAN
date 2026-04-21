@@ -57,8 +57,11 @@ export function drawMap(cx: CanvasRenderingContext2D, state: GameState): void {
   }
 
   // --- Ghost house door: themed gate ---
+  // New 15x25 maze puts the house at cols 6-8 rows 9-11, with the
+  // single exit straight up out of row 9. Door sits on the row 9 top
+  // edge, spans the three house columns.
   cx.fillStyle = theme.ghostDoor;
-  cx.fillRect(8 * T, 8 * T + T / 2 - 2, 5 * T, 4);
+  cx.fillRect(6 * T, 9 * T - 2, 3 * T, 4);
 }
 
 
