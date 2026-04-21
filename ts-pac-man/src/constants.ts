@@ -1,4 +1,4 @@
-export const T = 28;
+export const T = 36;
 export const COLS = 21;
 export const ROWS = 23;
 export const W = COLS * T;
